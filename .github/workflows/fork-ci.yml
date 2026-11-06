@@ -1,0 +1,252 @@
+# Fork CI for the SERVER repo. Copy to server/.github/workflows/fork-ci.yml on branch fork-work.
+# Everything heavy runs here, not on the owner's PC. Based on upstream's own build_pull_request.yml (same actions,
+# same JDK, same commands). Written to save Actions minutes: a cheap "detect" job decides which expensive jobs are needed.
+# NOT YET RUN: Phase 0 must get it green (the first run has no previous commit, so detect turns everything on).
+name: Fork CI
+
+on:
+  push:
+    branches: [fork-work]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      postgres:
+        description: 'Run the PostgreSQL smoke test'
+        type: boolean
+        default: true
+      schema:
+        description: 'Export the GraphQL schema'
+        type: boolean
+        default: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: Decide which jobs are needed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.d.outputs.code }}
+      db: ${{ steps.d.outputs.db }}
+      schema: ${{ steps.d.outputs.schema }}
+      docs: ${{ steps.d.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: d
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          PRBASE: ${{ github.event.pull_request.base.sha }}
+          WANT_PG: ${{ github.event.inputs.postgres }}
+          WANT_SCHEMA: ${{ github.event.inputs.schema }}
+        run: |
+          BASE="$BEFORE"
+          [ "$EVENT" = "pull_request" ] && BASE="$PRBASE"
+          ALL=false
+          if [ "$EVENT" = "workflow_dispatch" ] || [ -z "$BASE" ] || echo "$BASE" | grep -qE '^0+$' || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            ALL=true
+          fi
+          FILES=""
+          [ "$ALL" = "false" ] && FILES="$(git diff --name-only "$BASE" "$GITHUB_SHA")"
+          echo "All: $ALL"; echo "Changed files:"; printf '%s\n' "$FILES"
+          has() { printf '%s\n' "$FILES" | grep -qE "$1"; }
+          out() { echo "$1=$2" >> "$GITHUB_OUTPUT"; echo "$1=$2"; }
+          if [ "$ALL" = "true" ] || printf '%s\n' "$FILES" | grep -qvE '(\.md|^$)$'; then out code true; else out code false; fi
+          DB=false; SCHEMA=false; DOCS=false
+          if [ "$ALL" = "true" ]; then
+            DB=true; SCHEMA=true; DOCS=true
+            [ "$EVENT" = "workflow_dispatch" ] && [ "$WANT_PG" = "false" ] && DB=false
+            [ "$EVENT" = "workflow_dispatch" ] && [ "$WANT_SCHEMA" = "false" ] && SCHEMA=false
+          else
+            has '(/database/|/migration/|/model/table/|ServerConfig\.kt|libs\.versions\.toml|\.github/workflows/)' && DB=true
+            has '(/graphql/|ServerConfig\.kt|server-config/|\.github/workflows/)' && SCHEMA=true
+            has '(ServerConfig\.kt|^docs/|\.github/workflows/)' && DOCS=true
+          fi
+          out db "$DB"; out schema "$SCHEMA"; out docs "$DOCS"
+
+  build-test:
+    name: Lint, build, test, H2 smoke start
+    needs: detect
+    if: ${{ needs.detect.outputs.code == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          java-version: 25
+          distribution: 'zulu'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Copy CI gradle.properties
+        run: |
+          mkdir -p ~/.gradle
+          cp .github/runner-files/ci-gradle.properties ~/.gradle/gradle.properties
+
+      - name: ktlint, shadowJar and tests
+        run: ./gradlew ktlintCheck :server:shadowJar test --stacktrace
+
+      - name: Smoke start with H2 (30 s; exit 124 means it stayed up)
+        run: |
+          gcc -fPIC -I$JAVA_HOME/include -I$JAVA_HOME/include/linux -shared scripts/resources/catch_abort.c -lpthread -o scripts/resources/catch_abort.so
+          export LD_PRELOAD="$(pwd)/scripts/resources/catch_abort.so"
+          JAR=$(ls ./server/build/*.jar | head -1)
+          set +e
+          timeout 30s java \
+              -Dsuwayomi.tachidesk.config.server.systemTrayEnabled=false \
+              -Dsuwayomi.tachidesk.config.server.initialOpenInBrowserEnabled=false \
+              -jar "$JAR"
+          ecode="$?"
+          if ! [ "$ecode" -eq 124 -o "$ecode" -eq 125 ]; then printf "H2 start: exit code '%s'\n" "$ecode"; exit "$ecode"; fi
+          exit 0
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-test-reports
+          path: |
+            **/build/reports/tests
+            **/build/test-results
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Upload server jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-jar
+          path: server/build/*.jar
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Fork CI (server)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "Job status: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+
+  postgres-smoke:
+    name: PostgreSQL smoke start (only when database code changed, or on demand)
+    needs: [detect, build-test]
+    if: ${{ needs.detect.outputs.db == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/setup-java@v6
+        with:
+          java-version: 25
+          distribution: 'zulu'
+      - uses: actions/download-artifact@v4
+        with:
+          name: server-jar
+          path: jar
+      - name: Start on PostgreSQL for 30 s
+        run: |
+          JAR=$(ls jar/*.jar | head -1)
+          set +e
+          timeout 30s java \
+              -Dsuwayomi.tachidesk.config.server.systemTrayEnabled=false \
+              -Dsuwayomi.tachidesk.config.server.initialOpenInBrowserEnabled=false \
+              -Dsuwayomi.tachidesk.config.server.databaseType=POSTGRESQL \
+              -Dsuwayomi.tachidesk.config.server.databaseUrl=postgresql://localhost:5432/postgres \
+              -Dsuwayomi.tachidesk.config.server.databaseUsername=postgres \
+              -Dsuwayomi.tachidesk.config.server.databasePassword=postgres \
+              -jar "$JAR"
+          ecode="$?"
+          if ! [ "$ecode" -eq 124 -o "$ecode" -eq 125 ]; then printf "PostgreSQL start: exit code '%s'\n" "$ecode"; exit "$ecode"; fi
+          exit 0
+
+  export-schema:
+    name: Export GraphQL schema (only when GraphQL or settings changed, or on demand)
+    needs: [detect, build-test]
+    if: ${{ needs.detect.outputs.schema == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-java@v6
+        with:
+          java-version: 25
+          distribution: 'zulu'
+      - uses: actions/download-artifact@v4
+        with:
+          name: server-jar
+          path: jar
+      - name: Start server and introspect
+        run: |
+          JAR=$(ls jar/*.jar | head -1)
+          java -Dsuwayomi.tachidesk.config.server.systemTrayEnabled=false \
+               -Dsuwayomi.tachidesk.config.server.initialOpenInBrowserEnabled=false \
+               -jar "$JAR" > server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null -X POST -H 'Content-Type: application/json' -d '{"query":"{__typename}"}' http://localhost:4567/api/graphql; then break; fi
+            sleep 3
+          done
+          cat > introspection.json <<'JSON'
+          {"query":"query IntrospectionQuery { __schema { queryType { name } mutationType { name } subscriptionType { name } types { ...FullType } directives { name description locations args { ...InputValue } } } } fragment FullType on __Type { kind name description fields(includeDeprecated: true) { name description args { ...InputValue } type { ...TypeRef } isDeprecated deprecationReason } inputFields { ...InputValue } interfaces { ...TypeRef } enumValues(includeDeprecated: true) { name description isDeprecated deprecationReason } possibleTypes { ...TypeRef } } fragment InputValue on __InputValue { name description type { ...TypeRef } defaultValue } fragment TypeRef on __Type { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } }"}
+          JSON
+          curl -sf -X POST -H 'Content-Type: application/json' -d @introspection.json http://localhost:4567/api/graphql -o schema.json
+          test -s schema.json
+      - name: Upload schema and server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphql-schema
+          path: |
+            schema.json
+            server.log
+          retention-days: 5
+
+  docs-check:
+    name: Every ServerConfig option is documented
+    needs: detect
+    if: ${{ needs.detect.outputs.docs == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v7
+
+      - name: Validate all options are documented
+        run: |
+          f="`cat ./server/server-config/src/main/kotlin/suwayomi/tachidesk/server/ServerConfig.kt |
+            awk -F' ' 'BEGIN{prev=""}{if ($3 ~ "Mutable" && !(prev ~ "@Deprecated")) print "server." substr($2, 1, length($2)-1); prev=$0}' |
+            while read -r setting; do
+              if ! grep "$setting" ./docs/Configuring-Suwayomi‐Server.md >/dev/null; then
+                echo "Setting $setting not documented" >&2
+                echo ":"
+              fi
+            done`"
+          if [ -n "$f" ]; then
+            exit 1
+          fi
