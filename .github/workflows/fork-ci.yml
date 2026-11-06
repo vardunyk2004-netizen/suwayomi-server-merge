@@ -101,6 +101,22 @@ jobs:
           mkdir -p ~/.gradle
           cp .github/runner-files/ci-gradle.properties ~/.gradle/gradle.properties
 
+      # The android-jar Maven branch republished version 1.0.0 without Network*;
+      # use the immutable revision that still matches the pinned Server source.
+      - name: Pin Android stub artifact revision
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("build.gradle.kts")
+          text = path.read_text(encoding="utf-8")
+          moving = 'maven("https://github.com/Suwayomi/Suwayomi-Server/raw/android-jar/")'
+          pinned = 'maven("https://github.com/Suwayomi/Suwayomi-Server/raw/3983289d9481a8ba99c0b16350b27f41364906a2/")'
+          if text.count(moving) != 1:
+              raise SystemExit("Expected exactly one moving android-jar repository declaration")
+          path.write_text(text.replace(moving, pinned), encoding="utf-8")
+          PY
+
       - name: ktlint, shadowJar and tests
         run: ./gradlew ktlintCheck :server:shadowJar test --stacktrace
 
