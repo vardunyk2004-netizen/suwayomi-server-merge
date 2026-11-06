@@ -1,10 +1,10 @@
 package suwayomi.tachidesk.fork
 
+import suwayomi.tachidesk.server.serverConfig
+import suwayomi.tachidesk.test.ApplicationTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import suwayomi.tachidesk.server.serverConfig
-import suwayomi.tachidesk.test.ApplicationTest
 
 class ForkSettingsTest : ApplicationTest() {
     @Test
