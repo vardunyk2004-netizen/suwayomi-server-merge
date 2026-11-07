@@ -32,6 +32,7 @@ import suwayomi.tachidesk.graphql.types.KoreaderSyncChecksumMethod
 import suwayomi.tachidesk.graphql.types.KoreaderSyncConflictStrategy
 import suwayomi.tachidesk.graphql.types.KoreaderSyncLegacyStrategy
 import suwayomi.tachidesk.graphql.types.MergeChapterDisplay
+import suwayomi.tachidesk.graphql.types.MergeDedupeStrategy
 import suwayomi.tachidesk.graphql.types.MergeDefaultMode
 import suwayomi.tachidesk.graphql.types.MergeOfflineMode
 import suwayomi.tachidesk.graphql.types.MergeUnnumberedChapterMatching
@@ -1068,6 +1069,19 @@ class ServerConfig(
                 imports = listOf("suwayomi.tachidesk.graphql.types.MergeDefaultMode"),
             ),
         description = "Pre-select this merge mode in the merge wizard.",
+    )
+
+    val mergeDedupeStrategy: MutableStateFlow<MergeDedupeStrategy> by EnumSetting(
+        protoNumber = 1003,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = MergeDedupeStrategy.PREFERRED_SOURCE,
+        enumClass = MergeDedupeStrategy::class,
+        typeInfo =
+            SettingsRegistry.PartialTypeInfo(
+                imports = listOf("suwayomi.tachidesk.graphql.types.MergeDedupeStrategy"),
+            ),
+        description = "Choose how duplicate mirror chapters are resolved.",
     )
 
     val mergeUnnumberedChapterMatching: MutableStateFlow<MergeUnnumberedChapterMatching> by EnumSetting(

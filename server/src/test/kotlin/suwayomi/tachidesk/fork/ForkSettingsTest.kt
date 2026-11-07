@@ -2,6 +2,7 @@ package suwayomi.tachidesk.fork
 
 import suwayomi.tachidesk.fork.database.ForkMigrationRunner
 import suwayomi.tachidesk.graphql.types.MergeChapterDisplay
+import suwayomi.tachidesk.graphql.types.MergeDedupeStrategy
 import suwayomi.tachidesk.graphql.types.MergeDefaultMode
 import suwayomi.tachidesk.graphql.types.MergeOfflineMode
 import suwayomi.tachidesk.graphql.types.MergeUnnumberedChapterMatching
@@ -25,6 +26,7 @@ class ForkSettingsTest : ApplicationTest() {
     @Test
     fun `merge configuration uses the documented safe defaults`() {
         assertEquals(MergeDefaultMode.MIRROR, serverConfig.mergeDefaultMode.value)
+        assertEquals(MergeDedupeStrategy.PREFERRED_SOURCE, serverConfig.mergeDedupeStrategy.value)
         assertEquals(
             MergeUnnumberedChapterMatching.TITLE_SCANLATOR,
             serverConfig.mergeUnnumberedChapterMatching.value,

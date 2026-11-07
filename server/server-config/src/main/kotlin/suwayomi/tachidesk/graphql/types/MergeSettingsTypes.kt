@@ -13,6 +13,13 @@ enum class MergeDefaultMode {
     SEQUENCE,
 }
 
+enum class MergeDedupeStrategy {
+    PREFERRED_SOURCE,
+    MOST_PAGES,
+    NEWEST_UPLOAD,
+    MANUAL_PER_CHAPTER,
+}
+
 enum class MergeUnnumberedChapterMatching {
     TITLE_SCANLATOR,
     KEEP_ALL,

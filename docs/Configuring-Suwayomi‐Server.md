@@ -314,6 +314,7 @@ server.syncInterval = "0s"
 server.forkStockMode = false
 server.mergeEnabled = false
 server.mergeDefaultMode = MIRROR
+server.mergeDedupeStrategy = PREFERRED_SOURCE
 server.mergeUnnumberedChapterMatching = TITLE_SCANLATOR
 server.mergeMinimumSources = 2
 server.mergeChapterDisplay = ORIGINAL
@@ -329,6 +330,7 @@ server.doctorEnabled = false
 - `server.forkStockMode` disables every fork feature and preserves stock Suwayomi behavior.
 - `server.mergeEnabled` enables merge and library tools. It is disabled by default.
 - `server.mergeDefaultMode` pre-selects MIRROR or SEQUENCE in the merge wizard.
+- `server.mergeDedupeStrategy` chooses the duplicate mirror chapter by preferred source order, most pages, newest upload, or manual per-chapter choice.
 - `server.mergeUnnumberedChapterMatching` matches unnumbered chapters by title and scanlator, or keeps all of them.
 - `server.mergeMinimumSources` sets the minimum sources retained by a merge (2–5).
 - `server.mergeChapterDisplay` shows original or normalized merged chapter names; real numbers are always preserved.
