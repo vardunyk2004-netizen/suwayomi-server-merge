@@ -27,7 +27,7 @@ object ForkMigrationRunner {
             migrations.forEach { migration ->
                 transaction {
                     if (!isApplied(migration.version)) {
-                        migration.apply()
+                        migration.apply(this)
                         exec(
                             "INSERT INTO fork_migration (version, name, applied_at) VALUES (${migration.version}, '${migration.name}', ${System.currentTimeMillis()})",
                         )

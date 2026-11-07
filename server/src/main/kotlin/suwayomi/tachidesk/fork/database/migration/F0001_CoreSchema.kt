@@ -10,8 +10,8 @@ class F0001_CoreSchema : ForkMigration {
     override val version = 1
     override val name = "CoreSchema"
 
-    override fun JdbcTransaction.apply() {
-        statements.forEach(::exec)
+    override fun apply(transaction: JdbcTransaction) {
+        statements.forEach { statement -> transaction.exec(statement) }
     }
 
     private val jsonType =

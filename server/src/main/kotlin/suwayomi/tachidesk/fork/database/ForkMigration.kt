@@ -6,5 +6,5 @@ interface ForkMigration {
     val version: Int
     val name: String
 
-    fun JdbcTransaction.apply()
+    fun apply(transaction: JdbcTransaction)
 }
