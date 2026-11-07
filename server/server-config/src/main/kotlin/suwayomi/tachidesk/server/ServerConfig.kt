@@ -1037,6 +1037,46 @@ class ServerConfig(
         description = "Use Hikari Connection Pool to connect to the database.",
     )
 
+    val forkStockMode: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1000,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Disable every fork feature and keep stock Suwayomi behavior.",
+    )
+
+    val mergeEnabled: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1001,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Enable merge and library tools.",
+    )
+
+    val duplicatesEnabled: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1060,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Enable duplicate detection tools.",
+    )
+
+    val reindexEnabled: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1070,
+        group = SettingGroup.MAINTENANCE,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Enable download reindex tools.",
+    )
+
+    val doctorEnabled: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1080,
+        group = SettingGroup.MAINTENANCE,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Enable consistency doctor tools.",
+    )
+
     val kcefEnabled: MutableStateFlow<Boolean> by BooleanSetting(
         protoNumber = 86,
         group = SettingGroup.WEB_VIEW,

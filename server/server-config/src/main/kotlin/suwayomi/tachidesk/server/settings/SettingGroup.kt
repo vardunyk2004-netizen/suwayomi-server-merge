@@ -18,7 +18,10 @@ enum class SettingGroup(
     OPDS("OPDS"),
     KOREADER_SYNC("KOReader sync"),
     WEB_VIEW("WebView"),
-    SYNCYOMI("SyncYomi")
+    SYNCYOMI("SyncYomi"),
+    MERGE("Merge & library tools"),
+    DUPLICATES("Duplicates"),
+    MAINTENANCE("Maintenance"),
     ;
 
     override fun toString(): String = value

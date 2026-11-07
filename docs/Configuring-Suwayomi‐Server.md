@@ -309,6 +309,20 @@ server.syncInterval = "0s"
 
 **Note:** These settings are excluded from backups, so a backup can be used to easily switch database installations by setting up the connection first, then restoring the backup.
 
+### Merge & library tools
+```
+server.forkStockMode = false
+server.mergeEnabled = false
+server.duplicatesEnabled = false
+server.reindexEnabled = false
+server.doctorEnabled = false
+```
+- `server.forkStockMode` disables every fork feature and preserves stock Suwayomi behavior.
+- `server.mergeEnabled` enables merge and library tools. It is disabled by default.
+- `server.duplicatesEnabled` enables duplicate detection tools. It is disabled by default.
+- `server.reindexEnabled` enables download reindex tools. It is disabled by default.
+- `server.doctorEnabled` enables consistency doctor tools. It is disabled by default.
+
 ## Overriding configuration options with command-line arguments
 You can override the above configuration options with command-line arguments. 
 You usually only need to set this when using custom setups like a portable version of Suwayomi or your if your User dir cannot be written to or your system administrator doesn't allow it.
