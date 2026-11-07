@@ -31,6 +31,10 @@ import suwayomi.tachidesk.graphql.types.DownloadConversion
 import suwayomi.tachidesk.graphql.types.KoreaderSyncChecksumMethod
 import suwayomi.tachidesk.graphql.types.KoreaderSyncConflictStrategy
 import suwayomi.tachidesk.graphql.types.KoreaderSyncLegacyStrategy
+import suwayomi.tachidesk.graphql.types.MergeChapterDisplay
+import suwayomi.tachidesk.graphql.types.MergeDefaultMode
+import suwayomi.tachidesk.graphql.types.MergeOfflineMode
+import suwayomi.tachidesk.graphql.types.MergeUnnumberedChapterMatching
 import suwayomi.tachidesk.graphql.types.SettingsDownloadConversionHeaderType
 import suwayomi.tachidesk.graphql.types.SettingsDownloadConversionType
 import suwayomi.tachidesk.graphql.types.WebUIChannel
@@ -1051,6 +1055,100 @@ class ServerConfig(
         privacySafe = true,
         defaultValue = false,
         description = "Enable merge and library tools.",
+    )
+
+    val mergeDefaultMode: MutableStateFlow<MergeDefaultMode> by EnumSetting(
+        protoNumber = 1002,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = MergeDefaultMode.MIRROR,
+        enumClass = MergeDefaultMode::class,
+        typeInfo =
+            SettingsRegistry.PartialTypeInfo(
+                imports = listOf("suwayomi.tachidesk.graphql.types.MergeDefaultMode"),
+            ),
+        description = "Pre-select this merge mode in the merge wizard.",
+    )
+
+    val mergeUnnumberedChapterMatching: MutableStateFlow<MergeUnnumberedChapterMatching> by EnumSetting(
+        protoNumber = 1004,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = MergeUnnumberedChapterMatching.TITLE_SCANLATOR,
+        enumClass = MergeUnnumberedChapterMatching::class,
+        typeInfo =
+            SettingsRegistry.PartialTypeInfo(
+                imports = listOf("suwayomi.tachidesk.graphql.types.MergeUnnumberedChapterMatching"),
+            ),
+        description = "Choose how unnumbered chapters are matched.",
+    )
+
+    val mergeMinimumSources: MutableStateFlow<Int> by IntSetting(
+        protoNumber = 1005,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = 2,
+        min = 2,
+        max = 5,
+        description = "Minimum number of sources a merge must retain.",
+    )
+
+    val mergeChapterDisplay: MutableStateFlow<MergeChapterDisplay> by EnumSetting(
+        protoNumber = 1006,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = MergeChapterDisplay.ORIGINAL,
+        enumClass = MergeChapterDisplay::class,
+        typeInfo =
+            SettingsRegistry.PartialTypeInfo(
+                imports = listOf("suwayomi.tachidesk.graphql.types.MergeChapterDisplay"),
+            ),
+        description = "Choose the chapter names shown for merged chapters; real chapter numbers are preserved.",
+    )
+
+    val mergeFallbackSourcesEnabled: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1007,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Try another source when a page list or image fails.",
+    )
+
+    val mergeOfflineMode: MutableStateFlow<MergeOfflineMode> by EnumSetting(
+        protoNumber = 1008,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = MergeOfflineMode.USE_EXISTING,
+        enumClass = MergeOfflineMode::class,
+        typeInfo =
+            SettingsRegistry.PartialTypeInfo(
+                imports = listOf("suwayomi.tachidesk.graphql.types.MergeOfflineMode"),
+            ),
+        description = "Choose how merged chapters behave while offline.",
+    )
+
+    val mergeDownloadOnceForMirrors: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1009,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Avoid downloading the same chapter from multiple mirror sources.",
+    )
+
+    val mergeChapterLevelEnabled: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1010,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Enable chapter-level merge and split operations.",
+    )
+
+    val mergeSplitRevalidateOnUpdate: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1011,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Re-check split chapter page counts during updates and flag changes for review.",
     )
 
     val duplicatesEnabled: MutableStateFlow<Boolean> by BooleanSetting(

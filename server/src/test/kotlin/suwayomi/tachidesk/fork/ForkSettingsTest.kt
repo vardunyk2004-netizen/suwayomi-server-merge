@@ -1,6 +1,10 @@
 package suwayomi.tachidesk.fork
 
 import suwayomi.tachidesk.fork.database.ForkMigrationRunner
+import suwayomi.tachidesk.graphql.types.MergeChapterDisplay
+import suwayomi.tachidesk.graphql.types.MergeDefaultMode
+import suwayomi.tachidesk.graphql.types.MergeOfflineMode
+import suwayomi.tachidesk.graphql.types.MergeUnnumberedChapterMatching
 import suwayomi.tachidesk.server.database.dbTransaction
 import suwayomi.tachidesk.server.serverConfig
 import suwayomi.tachidesk.test.ApplicationTest
@@ -16,6 +20,22 @@ class ForkSettingsTest : ApplicationTest() {
         assertFalse(serverConfig.duplicatesEnabled.value)
         assertFalse(serverConfig.reindexEnabled.value)
         assertFalse(serverConfig.doctorEnabled.value)
+    }
+
+    @Test
+    fun `merge configuration uses the documented safe defaults`() {
+        assertEquals(MergeDefaultMode.MIRROR, serverConfig.mergeDefaultMode.value)
+        assertEquals(
+            MergeUnnumberedChapterMatching.TITLE_SCANLATOR,
+            serverConfig.mergeUnnumberedChapterMatching.value,
+        )
+        assertEquals(2, serverConfig.mergeMinimumSources.value)
+        assertEquals(MergeChapterDisplay.ORIGINAL, serverConfig.mergeChapterDisplay.value)
+        assertEquals(true, serverConfig.mergeFallbackSourcesEnabled.value)
+        assertEquals(MergeOfflineMode.USE_EXISTING, serverConfig.mergeOfflineMode.value)
+        assertEquals(true, serverConfig.mergeDownloadOnceForMirrors.value)
+        assertEquals(false, serverConfig.mergeChapterLevelEnabled.value)
+        assertEquals(true, serverConfig.mergeSplitRevalidateOnUpdate.value)
     }
 
     @Test

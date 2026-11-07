@@ -313,12 +313,30 @@ server.syncInterval = "0s"
 ```
 server.forkStockMode = false
 server.mergeEnabled = false
+server.mergeDefaultMode = MIRROR
+server.mergeUnnumberedChapterMatching = TITLE_SCANLATOR
+server.mergeMinimumSources = 2
+server.mergeChapterDisplay = ORIGINAL
+server.mergeFallbackSourcesEnabled = true
+server.mergeOfflineMode = USE_EXISTING
+server.mergeDownloadOnceForMirrors = true
+server.mergeChapterLevelEnabled = false
+server.mergeSplitRevalidateOnUpdate = true
 server.duplicatesEnabled = false
 server.reindexEnabled = false
 server.doctorEnabled = false
 ```
 - `server.forkStockMode` disables every fork feature and preserves stock Suwayomi behavior.
 - `server.mergeEnabled` enables merge and library tools. It is disabled by default.
+- `server.mergeDefaultMode` pre-selects MIRROR or SEQUENCE in the merge wizard.
+- `server.mergeUnnumberedChapterMatching` matches unnumbered chapters by title and scanlator, or keeps all of them.
+- `server.mergeMinimumSources` sets the minimum sources retained by a merge (2–5).
+- `server.mergeChapterDisplay` shows original or normalized merged chapter names; real numbers are always preserved.
+- `server.mergeFallbackSourcesEnabled` tries another source when a page list or image fails.
+- `server.mergeOfflineMode` uses existing downloads, materializes chapters, or requires online access.
+- `server.mergeDownloadOnceForMirrors` avoids downloading the same chapter from multiple mirror sources.
+- `server.mergeChapterLevelEnabled` enables chapter-level merge and split operations; it is disabled by default.
+- `server.mergeSplitRevalidateOnUpdate` re-checks split chapter page counts during updates and flags changes for review.
 - `server.duplicatesEnabled` enables duplicate detection tools. It is disabled by default.
 - `server.reindexEnabled` enables download reindex tools. It is disabled by default.
 - `server.doctorEnabled` enables consistency doctor tools. It is disabled by default.
