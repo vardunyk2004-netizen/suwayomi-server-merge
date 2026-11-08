@@ -12,6 +12,7 @@ import suwayomi.tachidesk.test.ApplicationTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ForkSettingsTest : ApplicationTest() {
     @Test
@@ -21,6 +22,9 @@ class ForkSettingsTest : ApplicationTest() {
         assertFalse(serverConfig.duplicatesEnabled.value)
         assertFalse(serverConfig.reindexEnabled.value)
         assertFalse(serverConfig.doctorEnabled.value)
+        ForkFeatureAvailability.Feature.entries.forEach { feature ->
+            assertFalse(ForkFeatureAvailability.isEnabled(feature))
+        }
     }
 
     @Test
@@ -43,6 +47,51 @@ class ForkSettingsTest : ApplicationTest() {
     @Test
     fun `fork features are available until a fork migration fails`() {
         assertEquals(ForkFeatureAvailability.Status.AVAILABLE, ForkFeatureAvailability.status())
+    }
+
+    @Test
+    fun `feature gate honors master switches stock mode and migration availability`() {
+        val originalStockMode = serverConfig.forkStockMode.value
+        val originalMergeEnabled = serverConfig.mergeEnabled.value
+        val originalDuplicatesEnabled = serverConfig.duplicatesEnabled.value
+        val originalReindexEnabled = serverConfig.reindexEnabled.value
+        val originalDoctorEnabled = serverConfig.doctorEnabled.value
+        val originalAvailability = ForkFeatureAvailability.status()
+
+        try {
+            serverConfig.forkStockMode.value = false
+            serverConfig.mergeEnabled.value = true
+            serverConfig.duplicatesEnabled.value = true
+            serverConfig.reindexEnabled.value = true
+            serverConfig.doctorEnabled.value = true
+            ForkFeatureAvailability.markAvailable()
+
+            ForkFeatureAvailability.Feature.entries.forEach { feature ->
+                assertTrue(ForkFeatureAvailability.isEnabled(feature))
+            }
+
+            serverConfig.forkStockMode.value = true
+            ForkFeatureAvailability.Feature.entries.forEach { feature ->
+                assertFalse(ForkFeatureAvailability.isEnabled(feature))
+            }
+
+            serverConfig.forkStockMode.value = false
+            ForkFeatureAvailability.markUnavailable()
+            ForkFeatureAvailability.Feature.entries.forEach { feature ->
+                assertFalse(ForkFeatureAvailability.isEnabled(feature))
+            }
+        } finally {
+            serverConfig.forkStockMode.value = originalStockMode
+            serverConfig.mergeEnabled.value = originalMergeEnabled
+            serverConfig.duplicatesEnabled.value = originalDuplicatesEnabled
+            serverConfig.reindexEnabled.value = originalReindexEnabled
+            serverConfig.doctorEnabled.value = originalDoctorEnabled
+            if (originalAvailability == ForkFeatureAvailability.Status.AVAILABLE) {
+                ForkFeatureAvailability.markAvailable()
+            } else {
+                ForkFeatureAvailability.markUnavailable()
+            }
+        }
     }
 
     @Test
