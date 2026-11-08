@@ -51,46 +51,31 @@ class ForkSettingsTest : ApplicationTest() {
 
     @Test
     fun `feature gate honors master switches stock mode and migration availability`() {
-        val originalStockMode = serverConfig.forkStockMode.value
-        val originalMergeEnabled = serverConfig.mergeEnabled.value
-        val originalDuplicatesEnabled = serverConfig.duplicatesEnabled.value
-        val originalReindexEnabled = serverConfig.reindexEnabled.value
-        val originalDoctorEnabled = serverConfig.doctorEnabled.value
-        val originalAvailability = ForkFeatureAvailability.status()
+        val allEnabled =
+            ForkFeatureAvailability.Switches(
+                stockMode = false,
+                mergeEnabled = true,
+                duplicatesEnabled = true,
+                reindexEnabled = true,
+                doctorEnabled = true,
+            )
 
-        try {
-            serverConfig.forkStockMode.value = false
-            serverConfig.mergeEnabled.value = true
-            serverConfig.duplicatesEnabled.value = true
-            serverConfig.reindexEnabled.value = true
-            serverConfig.doctorEnabled.value = true
-            ForkFeatureAvailability.markAvailable()
-
-            ForkFeatureAvailability.Feature.entries.forEach { feature ->
-                assertTrue(ForkFeatureAvailability.isEnabled(feature))
-            }
-
-            serverConfig.forkStockMode.value = true
-            ForkFeatureAvailability.Feature.entries.forEach { feature ->
-                assertFalse(ForkFeatureAvailability.isEnabled(feature))
-            }
-
-            serverConfig.forkStockMode.value = false
-            ForkFeatureAvailability.markUnavailable()
-            ForkFeatureAvailability.Feature.entries.forEach { feature ->
-                assertFalse(ForkFeatureAvailability.isEnabled(feature))
-            }
-        } finally {
-            serverConfig.forkStockMode.value = originalStockMode
-            serverConfig.mergeEnabled.value = originalMergeEnabled
-            serverConfig.duplicatesEnabled.value = originalDuplicatesEnabled
-            serverConfig.reindexEnabled.value = originalReindexEnabled
-            serverConfig.doctorEnabled.value = originalDoctorEnabled
-            if (originalAvailability == ForkFeatureAvailability.Status.AVAILABLE) {
-                ForkFeatureAvailability.markAvailable()
-            } else {
-                ForkFeatureAvailability.markUnavailable()
-            }
+        ForkFeatureAvailability.Feature.entries.forEach { feature ->
+            assertTrue(ForkFeatureAvailability.isEnabled(feature, ForkFeatureAvailability.Status.AVAILABLE, allEnabled))
+            assertFalse(
+                ForkFeatureAvailability.isEnabled(
+                    feature,
+                    ForkFeatureAvailability.Status.AVAILABLE,
+                    allEnabled.copy(stockMode = true),
+                ),
+            )
+            assertFalse(
+                ForkFeatureAvailability.isEnabled(
+                    feature,
+                    ForkFeatureAvailability.Status.UNAVAILABLE,
+                    allEnabled,
+                ),
+            )
         }
     }
 
