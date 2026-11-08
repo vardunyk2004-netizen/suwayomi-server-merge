@@ -1,7 +1,7 @@
 package suwayomi.tachidesk.graphql.queries
 
-import suwayomi.tachidesk.graphql.directives.RequireAuth
 import suwayomi.tachidesk.fork.ForkFeatureAvailability
+import suwayomi.tachidesk.graphql.directives.RequireAuth
 import suwayomi.tachidesk.graphql.types.ForkFeaturesAvailableStatus
 import suwayomi.tachidesk.graphql.types.SettingsType
 
