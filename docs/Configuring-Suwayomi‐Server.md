@@ -323,9 +323,47 @@ server.mergeOfflineMode = USE_EXISTING
 server.mergeDownloadOnceForMirrors = true
 server.mergeChapterLevelEnabled = false
 server.mergeSplitRevalidateOnUpdate = true
+server.progressSyncEnabled = true
+server.progressConflictPolicy = NEWEST_WINS
+server.progressReadIsMonotonic = true
+server.progressBookmarkPolicy = UNION
+server.progressDirection = BOTH
+server.mergeTrackerPolicy = COPY
+server.lifecycleTrashEnabled = true
+server.lifecycleTrashRetentionDays = 30
+server.lifecycleRestoreSourcesOnRemoveMerged = false
+server.lifecycleConfirmPurgeText = true
+server.mergeUpdateReapplyPlan = true
+server.mergeUpdateIsolateSourceFailures = true
+server.mergeDetectRemovedChapters = true
+server.mergeExcludeFromSync = true
+server.mergeBackupEnabled = true
+server.mergeBackupFlattenExport = false
+server.mergeOpdsVisibility = MERGED_ONLY
 server.duplicatesEnabled = false
+server.duplicatesStrongThreshold = 88
+server.duplicatesMinThreshold = 74
+server.duplicatesUseThumbnailHash = false
+server.duplicatesUseTrackerMatching = true
+server.duplicatesBackgroundRefresh = false
+server.duplicatesBlockSequels = true
+server.duplicatesAutoSuggestMerges = false
+server.duplicatesWeightTitle = 0.25
+server.duplicatesWeightCoreTitle = 0.20
+server.duplicatesWeightToken = 0.15
+server.duplicatesWeightAlias = 0.10
+server.duplicatesWeightUrl = 0.10
+server.duplicatesWeightChapter = 0.10
+server.duplicatesWeightThumbnail = 0.05
+server.duplicatesWeightTracker = 0.05
 server.reindexEnabled = false
+server.reindexDefaultDryRun = true
+server.reindexAllowFuzzy = false
+server.reindexAdoptMode = COPY
 server.doctorEnabled = false
+server.doctorSchedule = OFF
+server.migrationBlockMergedSources = true
+server.sourcePinEnabled = false
 ```
 - `server.forkStockMode` disables every fork feature and preserves stock Suwayomi behavior.
 - `server.mergeEnabled` enables merge and library tools. It is disabled by default.
@@ -339,9 +377,40 @@ server.doctorEnabled = false
 - `server.mergeDownloadOnceForMirrors` avoids downloading the same chapter from multiple mirror sources.
 - `server.mergeChapterLevelEnabled` enables chapter-level merge and split operations; it is disabled by default.
 - `server.mergeSplitRevalidateOnUpdate` re-checks split chapter page counts during updates and flags changes for review.
+- `server.progressSyncEnabled` enables progress propagation between merged and source chapters.
+- `server.progressConflictPolicy` selects NEWEST_WINS, VIRTUAL_WINS, or SOURCE_WINS when progress differs.
+- `server.progressReadIsMonotonic` prevents a read chapter from silently reverting to unread.
+- `server.progressBookmarkPolicy` combines bookmarks as a UNION or follows the latest change.
+- `server.progressDirection` synchronizes both ways or only to source chapters.
+- `server.mergeTrackerPolicy` copies, merges, or ignores tracker records when sources are merged.
+- `server.lifecycleTrashEnabled` retains soft-removed fork items in trash.
+- `server.lifecycleTrashRetentionDays` controls trash retention from 0 to 3650 days; zero keeps items indefinitely.
+- `server.lifecycleRestoreSourcesOnRemoveMerged` restores source manga when a merged manga is removed; disabled by default.
+- `server.lifecycleConfirmPurgeText` requires typed confirmation before permanent purge.
+- `server.mergeUpdateReapplyPlan` reapplies filters, exclusions and duplicate selection after source updates.
+- `server.mergeUpdateIsolateSourceFailures` allows other sources to update when one source fails.
+- `server.mergeDetectRemovedChapters` marks removed source chapters missing and attempts safe relinking.
+- `server.mergeExcludeFromSync` excludes fork-owned merge, lifecycle and journal data from SyncYomi.
+- `server.mergeBackupEnabled` includes merge configuration and links in server backups.
+- `server.mergeBackupFlattenExport` exports merged manga as ordinary manga using the preferred source chapters.
+- `server.mergeOpdsVisibility` shows merged entries only or both merged and source manga in OPDS.
 - `server.duplicatesEnabled` enables duplicate detection tools. It is disabled by default.
+- `server.duplicatesStrongThreshold` sets the strong duplicate score threshold (50–100; default 88).
+- `server.duplicatesMinThreshold` sets the candidate score threshold (30–95; default 74).
+- `server.duplicatesUseThumbnailHash` enables rate-limited thumbnail hashing; disabled by default.
+- `server.duplicatesUseTrackerMatching` includes tracker identity as a matching signal.
+- `server.duplicatesBackgroundRefresh` enables background duplicate-signature refresh; disabled by default.
+- `server.duplicatesBlockSequels` prevents sequel, season and part markers from matching as duplicates.
+- `server.duplicatesAutoSuggestMerges` displays automatic merge suggestions; disabled by default.
+- `server.duplicatesWeightTitle`, `server.duplicatesWeightCoreTitle`, `server.duplicatesWeightToken`, `server.duplicatesWeightAlias`, `server.duplicatesWeightUrl`, `server.duplicatesWeightChapter`, `server.duplicatesWeightThumbnail`, and `server.duplicatesWeightTracker` set duplicate signal weights (each 0.0–1.0; defaults are 0.25, 0.20, 0.15, 0.10, 0.10, 0.10, 0.05, and 0.05 respectively).
 - `server.reindexEnabled` enables download reindex tools. It is disabled by default.
+- `server.reindexDefaultDryRun` previews download reindex changes before applying them.
+- `server.reindexAllowFuzzy` permits fuzzy matches, which still require per-item confirmation.
+- `server.reindexAdoptMode` copies or moves adopted downloads; COPY is the safe default.
 - `server.doctorEnabled` enables consistency doctor tools. It is disabled by default.
+- `server.doctorSchedule` controls scheduled checks (OFF, DAILY or WEEKLY); OFF is the default.
+- `server.migrationBlockMergedSources` blocks unsafe migration of a manga used as a merge source.
+- `server.sourcePinEnabled` enables source pinning controls; disabled by default.
 
 ## Overriding configuration options with command-line arguments
 You can override the above configuration options with command-line arguments. 

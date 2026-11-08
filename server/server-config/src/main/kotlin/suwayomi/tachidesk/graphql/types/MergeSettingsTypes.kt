@@ -35,3 +35,48 @@ enum class MergeOfflineMode {
     MATERIALIZE,
     ONLINE_ONLY,
 }
+
+enum class ProgressConflictPolicy {
+    NEWEST_WINS,
+    VIRTUAL_WINS,
+    SOURCE_WINS,
+}
+
+enum class ProgressBookmarkPolicy {
+    UNION,
+    FOLLOW_LATEST,
+}
+
+enum class ProgressDirection {
+    BOTH,
+    TO_SOURCE_ONLY,
+}
+
+enum class MergeTrackerPolicy {
+    COPY,
+    MERGE,
+    IGNORE,
+}
+
+enum class MergeOpdsVisibility {
+    MERGED_ONLY,
+    BOTH,
+}
+
+enum class ReindexAdoptMode {
+    COPY,
+    MOVE,
+}
+
+enum class DoctorSchedule {
+    OFF,
+    DAILY,
+    WEEKLY,
+}
+
+enum class ForkFeaturesAvailableStatus {
+    AVAILABLE,
+    DISABLED_BY_SETTING,
+    DISABLED_BY_STOCK_MODE,
+    UNAVAILABLE,
+}

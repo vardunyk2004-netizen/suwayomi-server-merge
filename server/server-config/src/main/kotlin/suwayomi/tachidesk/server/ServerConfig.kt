@@ -27,6 +27,7 @@ import org.jetbrains.exposed.v1.core.SortOrder
 import suwayomi.tachidesk.graphql.types.AuthMode
 import suwayomi.tachidesk.graphql.types.CbzMediaType
 import suwayomi.tachidesk.graphql.types.DatabaseType
+import suwayomi.tachidesk.graphql.types.DoctorSchedule
 import suwayomi.tachidesk.graphql.types.DownloadConversion
 import suwayomi.tachidesk.graphql.types.KoreaderSyncChecksumMethod
 import suwayomi.tachidesk.graphql.types.KoreaderSyncConflictStrategy
@@ -35,7 +36,13 @@ import suwayomi.tachidesk.graphql.types.MergeChapterDisplay
 import suwayomi.tachidesk.graphql.types.MergeDedupeStrategy
 import suwayomi.tachidesk.graphql.types.MergeDefaultMode
 import suwayomi.tachidesk.graphql.types.MergeOfflineMode
+import suwayomi.tachidesk.graphql.types.MergeOpdsVisibility
+import suwayomi.tachidesk.graphql.types.MergeTrackerPolicy
 import suwayomi.tachidesk.graphql.types.MergeUnnumberedChapterMatching
+import suwayomi.tachidesk.graphql.types.ProgressBookmarkPolicy
+import suwayomi.tachidesk.graphql.types.ProgressConflictPolicy
+import suwayomi.tachidesk.graphql.types.ProgressDirection
+import suwayomi.tachidesk.graphql.types.ReindexAdoptMode
 import suwayomi.tachidesk.graphql.types.SettingsDownloadConversionHeaderType
 import suwayomi.tachidesk.graphql.types.SettingsDownloadConversionType
 import suwayomi.tachidesk.graphql.types.WebUIChannel
@@ -1165,12 +1172,300 @@ class ServerConfig(
         description = "Re-check split chapter page counts during updates and flag changes for review.",
     )
 
+    val progressSyncEnabled: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1020,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Synchronize read progress between merged and source chapters.",
+    )
+
+    val progressConflictPolicy: MutableStateFlow<ProgressConflictPolicy> by EnumSetting(
+        protoNumber = 1021,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = ProgressConflictPolicy.NEWEST_WINS,
+        enumClass = ProgressConflictPolicy::class,
+        typeInfo = SettingsRegistry.PartialTypeInfo(imports = listOf("suwayomi.tachidesk.graphql.types.ProgressConflictPolicy")),
+        description = "Choose which chapter progress wins when source and merged progress differ.",
+    )
+
+    val progressReadIsMonotonic: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1022,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Prevent synchronized progress from silently changing a read chapter back to unread.",
+    )
+
+    val progressBookmarkPolicy: MutableStateFlow<ProgressBookmarkPolicy> by EnumSetting(
+        protoNumber = 1023,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = ProgressBookmarkPolicy.UNION,
+        enumClass = ProgressBookmarkPolicy::class,
+        typeInfo = SettingsRegistry.PartialTypeInfo(imports = listOf("suwayomi.tachidesk.graphql.types.ProgressBookmarkPolicy")),
+        description = "Choose how bookmarks are combined between source and merged chapters.",
+    )
+
+    val progressDirection: MutableStateFlow<ProgressDirection> by EnumSetting(
+        protoNumber = 1024,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = ProgressDirection.BOTH,
+        enumClass = ProgressDirection::class,
+        typeInfo = SettingsRegistry.PartialTypeInfo(imports = listOf("suwayomi.tachidesk.graphql.types.ProgressDirection")),
+        description = "Choose whether progress synchronizes both ways or only to source chapters.",
+    )
+
+    val mergeTrackerPolicy: MutableStateFlow<MergeTrackerPolicy> by EnumSetting(
+        protoNumber = 1025,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = MergeTrackerPolicy.COPY,
+        enumClass = MergeTrackerPolicy::class,
+        typeInfo = SettingsRegistry.PartialTypeInfo(imports = listOf("suwayomi.tachidesk.graphql.types.MergeTrackerPolicy")),
+        description = "Choose how tracker records are handled when sources are merged.",
+    )
+
+    val lifecycleTrashEnabled: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1030,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Send soft-removed fork items to trash instead of making them disappear.",
+    )
+
+    val lifecycleTrashRetentionDays: MutableStateFlow<Int> by IntSetting(
+        protoNumber = 1031,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = 30,
+        min = 0,
+        max = 3650,
+        description = "Set how long trashed items are retained; zero keeps them indefinitely.",
+    )
+
+    val lifecycleRestoreSourcesOnRemoveMerged: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1032,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Restore source manga to the library when a merged manga is removed.",
+    )
+
+    val lifecycleConfirmPurgeText: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1033,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Require typed confirmation before permanently purging trashed items.",
+    )
+
+    val mergeUpdateReapplyPlan: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1040,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Re-apply merge filters, exclusions and duplicate selection after each source update.",
+    )
+
+    val mergeUpdateIsolateSourceFailures: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1041,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Continue updating other merge sources when one source fails.",
+    )
+
+    val mergeDetectRemovedChapters: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1042,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Mark removed source chapters missing and attempt to relink them after updates.",
+    )
+
+    val mergeExcludeFromSync: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1050,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Keep fork merge, lifecycle and journal data out of SyncYomi.",
+    )
+
+    val mergeBackupEnabled: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1051,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Include fork merge configuration and links in server backups.",
+    )
+
+    val mergeBackupFlattenExport: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1052,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Export merged manga as ordinary manga using the preferred source chapters.",
+    )
+
+    val mergeOpdsVisibility: MutableStateFlow<MergeOpdsVisibility> by EnumSetting(
+        protoNumber = 1053,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = MergeOpdsVisibility.MERGED_ONLY,
+        enumClass = MergeOpdsVisibility::class,
+        typeInfo = SettingsRegistry.PartialTypeInfo(imports = listOf("suwayomi.tachidesk.graphql.types.MergeOpdsVisibility")),
+        description = "Choose whether OPDS shows merged manga only or both merged and source manga.",
+    )
+
     val duplicatesEnabled: MutableStateFlow<Boolean> by BooleanSetting(
         protoNumber = 1060,
         group = SettingGroup.DUPLICATES,
         privacySafe = true,
         defaultValue = false,
         description = "Enable duplicate detection tools.",
+    )
+
+    val duplicatesStrongThreshold: MutableStateFlow<Int> by IntSetting(
+        protoNumber = 1061,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = 88,
+        min = 50,
+        max = 100,
+        description = "Set the minimum score for a strong duplicate match.",
+    )
+
+    val duplicatesMinThreshold: MutableStateFlow<Int> by IntSetting(
+        protoNumber = 1062,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = 74,
+        min = 30,
+        max = 95,
+        description = "Set the minimum score for a duplicate candidate to be shown.",
+    )
+
+    val duplicatesWeightTitle: MutableStateFlow<Double> by DoubleSetting(
+        protoNumber = 1100,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = 0.25,
+        min = 0.0,
+        max = 1.0,
+        description = "Set the duplicate score weight for the full title match.",
+    )
+
+    val duplicatesWeightCoreTitle: MutableStateFlow<Double> by DoubleSetting(
+        protoNumber = 1101,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = 0.20,
+        min = 0.0,
+        max = 1.0,
+        description = "Set the duplicate score weight for the normalized core title.",
+    )
+
+    val duplicatesWeightToken: MutableStateFlow<Double> by DoubleSetting(
+        protoNumber = 1102,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = 0.15,
+        min = 0.0,
+        max = 1.0,
+        description = "Set the duplicate score weight for shared title tokens.",
+    )
+
+    val duplicatesWeightAlias: MutableStateFlow<Double> by DoubleSetting(
+        protoNumber = 1103,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = 0.10,
+        min = 0.0,
+        max = 1.0,
+        description = "Set the duplicate score weight for known title aliases.",
+    )
+
+    val duplicatesWeightUrl: MutableStateFlow<Double> by DoubleSetting(
+        protoNumber = 1104,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = 0.10,
+        min = 0.0,
+        max = 1.0,
+        description = "Set the duplicate score weight for matching source URLs.",
+    )
+
+    val duplicatesWeightChapter: MutableStateFlow<Double> by DoubleSetting(
+        protoNumber = 1105,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = 0.10,
+        min = 0.0,
+        max = 1.0,
+        description = "Set the duplicate score weight for chapter-list similarity.",
+    )
+
+    val duplicatesWeightThumbnail: MutableStateFlow<Double> by DoubleSetting(
+        protoNumber = 1106,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = 0.05,
+        min = 0.0,
+        max = 1.0,
+        description = "Set the duplicate score weight for thumbnail similarity.",
+    )
+
+    val duplicatesWeightTracker: MutableStateFlow<Double> by DoubleSetting(
+        protoNumber = 1107,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = 0.05,
+        min = 0.0,
+        max = 1.0,
+        description = "Set the duplicate score weight for matching tracker records.",
+    )
+
+    val duplicatesUseThumbnailHash: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1064,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Enable rate-limited thumbnail hashing in duplicate detection.",
+    )
+
+    val duplicatesUseTrackerMatching: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1065,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Use tracker identity as a duplicate detection signal.",
+    )
+
+    val duplicatesBackgroundRefresh: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1066,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Refresh duplicate signatures in the background.",
+    )
+
+    val duplicatesBlockSequels: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1067,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Prevent sequel, season and part markers from being treated as duplicates.",
+    )
+
+    val duplicatesAutoSuggestMerges: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1068,
+        group = SettingGroup.DUPLICATES,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Show suggested duplicate merges and their library indicator.",
     )
 
     val reindexEnabled: MutableStateFlow<Boolean> by BooleanSetting(
@@ -1181,12 +1476,64 @@ class ServerConfig(
         description = "Enable download reindex tools.",
     )
 
+    val reindexDefaultDryRun: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1071,
+        group = SettingGroup.MAINTENANCE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Preview download reindex changes before applying them by default.",
+    )
+
+    val reindexAllowFuzzy: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1072,
+        group = SettingGroup.MAINTENANCE,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Allow fuzzy download reindex matches, which still require per-item confirmation.",
+    )
+
+    val reindexAdoptMode: MutableStateFlow<ReindexAdoptMode> by EnumSetting(
+        protoNumber = 1073,
+        group = SettingGroup.MAINTENANCE,
+        privacySafe = true,
+        defaultValue = ReindexAdoptMode.COPY,
+        enumClass = ReindexAdoptMode::class,
+        typeInfo = SettingsRegistry.PartialTypeInfo(imports = listOf("suwayomi.tachidesk.graphql.types.ReindexAdoptMode")),
+        description = "Choose whether adopting a download copies it or moves it from its original location.",
+    )
+
     val doctorEnabled: MutableStateFlow<Boolean> by BooleanSetting(
         protoNumber = 1080,
         group = SettingGroup.MAINTENANCE,
         privacySafe = true,
         defaultValue = false,
         description = "Enable consistency doctor tools.",
+    )
+
+    val doctorSchedule: MutableStateFlow<DoctorSchedule> by EnumSetting(
+        protoNumber = 1081,
+        group = SettingGroup.MAINTENANCE,
+        privacySafe = true,
+        defaultValue = DoctorSchedule.OFF,
+        enumClass = DoctorSchedule::class,
+        typeInfo = SettingsRegistry.PartialTypeInfo(imports = listOf("suwayomi.tachidesk.graphql.types.DoctorSchedule")),
+        description = "Choose whether consistency checks run on request, daily or weekly.",
+    )
+
+    val migrationBlockMergedSources: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1090,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = true,
+        description = "Block migrating a manga that is a source in a merge unless its links are safely repointed.",
+    )
+
+    val sourcePinEnabled: MutableStateFlow<Boolean> by BooleanSetting(
+        protoNumber = 1091,
+        group = SettingGroup.MERGE,
+        privacySafe = true,
+        defaultValue = false,
+        description = "Enable source pinning controls in browse and migration screens.",
     )
 
     val kcefEnabled: MutableStateFlow<Boolean> by BooleanSetting(
