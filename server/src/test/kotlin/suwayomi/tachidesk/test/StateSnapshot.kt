@@ -45,9 +45,9 @@ internal fun captureStateSnapshot(downloadRoot: File): StateSnapshot {
                             buildList {
                                 while (resultSet.next()) {
                                     add(
-                                        columns.associateWith { column ->
-                                            resultSet.getObject(column).snapshotString()
-                                        }.toSortedMap(),
+                                        columns
+                                            .associateWith { column -> resultSet.getObject(column).snapshotString() }
+                                            .toSortedMap(),
                                     )
                                 }
                             }.sortedBy { row -> row.entries.joinToString("|") { (key, value) -> "$key=$value" } }
