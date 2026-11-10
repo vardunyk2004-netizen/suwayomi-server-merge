@@ -19,6 +19,7 @@ import suwayomi.tachidesk.manga.impl.backup.proto.handlers.BackupSettingsHandler
 import suwayomi.tachidesk.server.database.dbTransaction
 import suwayomi.tachidesk.server.serverConfig
 import suwayomi.tachidesk.server.settings.SettingsRegistry
+import suwayomi.tachidesk.server.settings.asMap
 import suwayomi.tachidesk.test.ApplicationTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
