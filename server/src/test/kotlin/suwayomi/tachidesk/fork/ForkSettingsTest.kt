@@ -14,6 +14,8 @@ import suwayomi.tachidesk.graphql.types.ProgressBookmarkPolicy
 import suwayomi.tachidesk.graphql.types.ProgressConflictPolicy
 import suwayomi.tachidesk.graphql.types.ProgressDirection
 import suwayomi.tachidesk.graphql.types.ReindexAdoptMode
+import suwayomi.tachidesk.manga.impl.backup.BackupFlags
+import suwayomi.tachidesk.manga.impl.backup.proto.handlers.BackupSettingsHandler
 import suwayomi.tachidesk.server.database.dbTransaction
 import suwayomi.tachidesk.server.serverConfig
 import suwayomi.tachidesk.server.settings.SettingsRegistry
@@ -249,6 +251,24 @@ class ForkSettingsTest : ApplicationTest() {
         }
 
         assertEquals(before, forkTableSnapshot(), "checking the production gate must not mutate fork tables")
+    }
+
+    @Test
+    fun `server settings backup contains the fork controls`() {
+        val backup = requireNotNull(BackupSettingsHandler.backup(BackupFlags.DEFAULT))
+        val backupValues = backup.asMap()
+        val forkSettings = SettingsRegistry.getAll().values.filter { it.protoNumber in 1000..1999 }
+        val missingSettings = forkSettings.filter { backupValues[it.name] == null }.map { it.name }
+
+        assertTrue(missingSettings.isEmpty(), "fork settings missing from backup: $missingSettings")
+    }
+
+    @Test
+    fun `server settings backup can omit settings`() {
+        assertEquals(
+            null,
+            BackupSettingsHandler.backup(BackupFlags.DEFAULT.copy(includeServerSettings = false)),
+        )
     }
 
     @Test
