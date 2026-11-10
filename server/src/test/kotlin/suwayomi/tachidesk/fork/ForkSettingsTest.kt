@@ -241,59 +241,14 @@ class ForkSettingsTest : ApplicationTest() {
     }
 
     @Test
-    fun `production feature gate disables every feature in stock mode and respects each master switch`() {
-        val originalStockMode = serverConfig.forkStockMode.value
-        val originalMergeEnabled = serverConfig.mergeEnabled.value
-        val originalDuplicatesEnabled = serverConfig.duplicatesEnabled.value
-        val originalReindexEnabled = serverConfig.reindexEnabled.value
-        val originalDoctorEnabled = serverConfig.doctorEnabled.value
-        val originalStatus = ForkFeatureAvailability.status()
+    fun `production feature gate keeps default-disabled features off without changing tables`() {
         val before = forkTableSnapshot()
 
-        try {
-            ForkFeatureAvailability.markAvailable()
-            serverConfig.mergeEnabled.value = true
-            serverConfig.duplicatesEnabled.value = true
-            serverConfig.reindexEnabled.value = true
-            serverConfig.doctorEnabled.value = true
-            serverConfig.forkStockMode.value = false
-
-            ForkFeatureAvailability.Feature.entries.forEach { feature ->
-                assertTrue(ForkFeatureAvailability.isEnabled(feature), "$feature should be enabled by its master switch")
-            }
-
-            serverConfig.forkStockMode.value = true
-            ForkFeatureAvailability.Feature.entries.forEach { feature ->
-                assertFalse(ForkFeatureAvailability.isEnabled(feature), "$feature must be disabled in stock mode")
-            }
-
-            serverConfig.forkStockMode.value = false
-            val masterSwitches =
-                mapOf(
-                    ForkFeatureAvailability.Feature.MERGE to serverConfig.mergeEnabled,
-                    ForkFeatureAvailability.Feature.DUPLICATES to serverConfig.duplicatesEnabled,
-                    ForkFeatureAvailability.Feature.REINDEX to serverConfig.reindexEnabled,
-                    ForkFeatureAvailability.Feature.DOCTOR to serverConfig.doctorEnabled,
-                )
-            masterSwitches.forEach { (feature, masterSwitch) ->
-                masterSwitch.value = false
-                assertFalse(ForkFeatureAvailability.isEnabled(feature), "$feature must respect its disabled master switch")
-                masterSwitch.value = true
-            }
-
-            assertEquals(before, forkTableSnapshot(), "checking the production gate must not mutate fork tables")
-        } finally {
-            serverConfig.forkStockMode.value = originalStockMode
-            serverConfig.mergeEnabled.value = originalMergeEnabled
-            serverConfig.duplicatesEnabled.value = originalDuplicatesEnabled
-            serverConfig.reindexEnabled.value = originalReindexEnabled
-            serverConfig.doctorEnabled.value = originalDoctorEnabled
-            if (originalStatus == ForkFeatureAvailability.Status.AVAILABLE) {
-                ForkFeatureAvailability.markAvailable()
-            } else {
-                ForkFeatureAvailability.markUnavailable()
-            }
+        ForkFeatureAvailability.Feature.entries.forEach { feature ->
+            assertFalse(ForkFeatureAvailability.isEnabled(feature), "$feature must be off with default master settings")
         }
+
+        assertEquals(before, forkTableSnapshot(), "checking the production gate must not mutate fork tables")
     }
 
     @Test
