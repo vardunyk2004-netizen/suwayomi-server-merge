@@ -75,7 +75,7 @@ class ForkLifecyclePlannerTest {
         val plan =
             ForkLifecyclePlanner.plan(
                 LifecycleRequest(
-                    action = LifecycleAction.SOFT_REMOVE,
+                    action = LifecycleAction.REMOVE_MERGED,
                     mergedMangaId = 100,
                     sourceMangaIds = listOf(1, 2),
                     sourceDownloadIds = listOf(10, 11),
