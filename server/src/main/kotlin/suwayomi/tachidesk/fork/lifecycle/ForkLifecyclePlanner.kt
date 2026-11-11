@@ -17,15 +17,20 @@ object ForkLifecyclePlanner {
         val sourceToRestore =
             when (request.action) {
                 LifecycleAction.REMOVE_SOURCE_FROM_MERGE -> listOf(requireSourceToRemove(request))
-                LifecycleAction.SOFT_REMOVE ->
+
+                LifecycleAction.SOFT_REMOVE -> {
                     if (request.restoreSources) request.sourceMangaIdsEligibleForRestore.distinct() else emptyList()
+                }
+
                 LifecycleAction.REMOVE_MERGED,
-                LifecycleAction.UNMERGE -> emptyList()
+                LifecycleAction.UNMERGE,
+                -> emptyList()
             }
 
         val virtualChaptersToRemove =
             when (request.action) {
                 LifecycleAction.UNMERGE -> request.virtualChapterIds.distinct()
+
                 LifecycleAction.REMOVE_SOURCE_FROM_MERGE,
                 LifecycleAction.REMOVE_MERGED,
                 LifecycleAction.SOFT_REMOVE,
@@ -35,11 +40,13 @@ object ForkLifecyclePlanner {
         return LifecyclePlan(
             targetLifecycleState =
                 when (request.action) {
-                    LifecycleAction.SOFT_REMOVE -> LifecycleState.SOFT_REMOVED
-                    LifecycleAction.REMOVE_MERGED -> LifecycleState.SOFT_REMOVED
                     LifecycleAction.REMOVE_SOURCE_FROM_MERGE,
                     LifecycleAction.UNMERGE,
                     -> LifecycleState.ACTIVE
+
+                    LifecycleAction.REMOVE_MERGED,
+                    LifecycleAction.SOFT_REMOVE,
+                    -> LifecycleState.SOFT_REMOVED
                 },
             virtualChapterIdsToRemove = virtualChaptersToRemove,
             sourceMangaIdsToRestore = sourceToRestore,
