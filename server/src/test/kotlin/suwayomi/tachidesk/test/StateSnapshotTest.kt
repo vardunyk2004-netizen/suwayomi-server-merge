@@ -23,13 +23,13 @@ class StateSnapshotTest : ApplicationTest() {
         @TempDir downloadRoot: Path,
     ) {
         dbTransaction {
-            exec("CREATE TABLE snapshot_test_fixture (id BIGINT PRIMARY KEY, value VARCHAR(255))")
+            exec("CREATE TABLE snapshot_test_fixture (id BIGINT PRIMARY KEY, fixture_value VARCHAR(255))")
         }
 
         try {
             val before = captureStateSnapshot(downloadRoot.toFile())
             dbTransaction {
-                exec("INSERT INTO snapshot_test_fixture (id, value) VALUES (1, 'first')")
+                exec("INSERT INTO snapshot_test_fixture (id, fixture_value) VALUES (1, 'first')")
             }
 
             val withRow = captureStateSnapshot(downloadRoot.toFile())
