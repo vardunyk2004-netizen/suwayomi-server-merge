@@ -30,7 +30,7 @@ internal fun captureStateSnapshot(downloadRoot: File): StateSnapshot {
                 } ?: emptyList()
 
             tables
-                .filterNot { it.lowercase(Locale.ROOT) == "fork_merge_journal" }
+                .filterNot(::isIgnoredSnapshotTable)
                 .associate { table ->
                     val quotedTable = table.replace("\"", "\"\"")
                     val rows =
@@ -73,6 +73,8 @@ internal fun captureStateSnapshot(downloadRoot: File): StateSnapshot {
 }
 
 private val ignoredTimestampColumns = setOf("applied_at", "created_at", "updated_at", "changed_at")
+
+internal fun isIgnoredSnapshotTable(table: String): Boolean = table.equals("fork_merge_journal", ignoreCase = true)
 
 private fun Any?.snapshotString(): String? =
     when (this) {
