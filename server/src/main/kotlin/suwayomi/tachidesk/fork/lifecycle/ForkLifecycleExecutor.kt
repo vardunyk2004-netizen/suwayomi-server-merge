@@ -202,7 +202,7 @@ class ForkLifecycleExecutor(
                     ForkMergeSourceTable.deleteWhere {
                         (ForkMergeSourceTable.groupId eq g.id) and (ForkMergeSourceTable.sourceMangaId eq sourceId)
                     }
-                    merge.reconcile(g.id)
+                    merge.reconcile(g.id, removedSourceMangaId = sourceId)
                 }
             }
 

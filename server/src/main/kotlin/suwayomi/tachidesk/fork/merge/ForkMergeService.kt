@@ -211,9 +211,12 @@ class ForkMergeService(
         }
     }
 
-    fun reconcile(groupId: Int): ReconcileResult {
+    fun reconcile(
+        groupId: Int,
+        removedSourceMangaId: Int? = null,
+    ): ReconcileResult {
         gate.require(Feature.MERGE)
-        return dbTransaction { reconcileInTransaction(groupId) }
+        return dbTransaction { reconcileInTransaction(groupId, removedSourceMangaId) }
     }
 
     fun addSource(
@@ -490,7 +493,10 @@ class ForkMergeService(
      * Virtual rows: never copy `is_downloaded` (D23); keep real numbers/names (D2); progress of NEW rows is
      * folded from the linked source chapters; existing rows keep their own progress.
      */
-    internal fun reconcileInTransaction(groupId: Int): ReconcileResult {
+    internal fun reconcileInTransaction(
+        groupId: Int,
+        removedSourceMangaId: Int? = null,
+    ): ReconcileResult {
         val group = requireGroup(groupId)
         val plan = planFrom(ForkMergeRepository.planInput(group))
         val display =
@@ -511,10 +517,27 @@ class ForkMergeService(
         val deliberatelyRemoved = plan.excludedEntryKeys.toSet() + group.options.partDefinitions.flatMap { it.hidesEntryKeys }
         val urlPrefix = ForkMergePlanner.virtualChapterUrl(group.id, "")
         val vanished = existing.keys - desired.keys
+        val removedSourceChapterIds =
+            if (removedSourceMangaId == null) {
+                emptySet()
+            } else {
+                ForkChapterLinkTable
+                    .selectAll()
+                    .where {
+                        (ForkChapterLinkTable.sourceMangaId eq removedSourceMangaId) and
+                            (ForkChapterLinkTable.mergedChapterId inList existing.values.map { it[ChapterTable.id].value })
+                    }
+                    .map { it[ForkChapterLinkTable.mergedChapterId] }
+                    .toSet()
+            }
         val (toDelete, toFlag) =
             vanished.partition { url ->
                 val key = url.removePrefix(urlPrefix)
-                !policy().detectRemovedChapters || key in deliberatelyRemoved || key.startsWith("p:")
+                val chapterId = existing.getValue(url)[ChapterTable.id].value
+                !policy().detectRemovedChapters ||
+                    key in deliberatelyRemoved ||
+                    key.startsWith("p:") ||
+                    chapterId in removedSourceChapterIds
             }
         if (toDelete.isNotEmpty()) {
             val ids = toDelete.map { existing.getValue(it)[ChapterTable.id].value }
