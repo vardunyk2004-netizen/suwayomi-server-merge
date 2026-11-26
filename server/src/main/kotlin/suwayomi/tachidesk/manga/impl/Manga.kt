@@ -39,6 +39,8 @@ import org.jetbrains.exposed.v1.jdbc.statements.toExecutable
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import suwayomi.tachidesk.fork.merge.ForkMergeHooks
+import suwayomi.tachidesk.fork.merge.ForkMergedSource
 import suwayomi.tachidesk.manga.impl.download.fileProvider.impl.MissingThumbnailException
 import suwayomi.tachidesk.manga.impl.util.network.await
 import suwayomi.tachidesk.manga.impl.util.source.GetSource.getSourceOrNull
@@ -160,6 +162,8 @@ object Manga {
         mangaInfoMutex.get(mangaId) { Mutex() }.withLock {
             var mangaEntry =
                 transaction { MangaTable.selectAll().where { MangaTable.id eq mangaId }.first() }
+            // F8: merged manga are re-planned by the fork, never fetched through a source (in-memory check).
+            if (ForkMergeHooks.handleMangaUpdate(mangaEntry)) return@withLock
             val source =
                 getSourceOrNull(mangaEntry[MangaTable.sourceReference])
                     ?: throw NullPointerException("Missing source ${mangaEntry[MangaTable.sourceReference]}")
@@ -180,6 +184,8 @@ object Manga {
             }
             if (updateChapters) {
                 Chapter.updateChapterListDatabase(mangaEntry, mangaUpdate.chapters, source)
+                // F8: re-plan merges that use this manga (no SQL unless merge is enabled).
+                ForkMergeHooks.afterChapterListUpdate(mangaEntry)
             }
         }
     }
@@ -439,6 +445,11 @@ object Manga {
                     ImageUtil.findImageType { imageFile.inputStream() }?.mime
                         ?: "image/jpeg"
                 imageFile.inputStream() to contentType
+            }
+
+            is ForkMergedSource -> {
+                // F7: configured cover source, then source order (visited set).
+                ForkMergeHooks.mergedThumbnail(mangaId)
             }
 
             is StubSource -> {

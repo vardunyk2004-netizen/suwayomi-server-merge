@@ -18,6 +18,7 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.statements.toExecutable
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jsoup.Jsoup
+import suwayomi.tachidesk.fork.progress.ForkProgressService
 import suwayomi.tachidesk.manga.impl.track.tracker.DeletableTracker
 import suwayomi.tachidesk.manga.impl.track.tracker.TrackerManager
 import suwayomi.tachidesk.manga.impl.track.tracker.model.Track
@@ -186,7 +187,8 @@ object Track {
 
         val chapter = queryMaxReadChapter(mangaId)
         val hasReadChapters = chapter != null
-        val chapterNumber = chapter?.get(ChapterTable.chapter_number)
+        // D2: merged chapters report their real (link) number; null for normal rows without SQL.
+        val chapterNumber = ForkProgressService.default.trackerNumber(chapter) ?: chapter?.get(ChapterTable.chapter_number)
 
         tracker.bind(track, hasReadChapters)
         val recordId = upsertTrackRecord(track)
@@ -363,7 +365,7 @@ object Track {
 
     suspend fun trackChapter(mangaId: Int) {
         val chapter = queryMaxReadChapter(mangaId)
-        val chapterNumber = chapter?.get(ChapterTable.chapter_number)
+        val chapterNumber = ForkProgressService.default.trackerNumber(chapter) ?: chapter?.get(ChapterTable.chapter_number)
 
         logger.info {
             "trackChapter(mangaId= $mangaId): maxReadChapter= #$chapterNumber ${chapter?.get(ChapterTable.name)}"

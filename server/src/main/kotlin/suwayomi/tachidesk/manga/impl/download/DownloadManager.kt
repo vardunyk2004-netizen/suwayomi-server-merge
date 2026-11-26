@@ -33,6 +33,7 @@ import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import suwayomi.tachidesk.fork.merge.ForkMergeHooks
 import suwayomi.tachidesk.graphql.types.ChapterDownloadReorder
 import suwayomi.tachidesk.manga.impl.download.model.DownloadChapter
 import suwayomi.tachidesk.manga.impl.download.model.DownloadQueueItem
@@ -371,6 +372,11 @@ object DownloadManager {
                     .orderBy(ChapterTable.sourceOrder)
                     .toList()
             }
+
+        // F7: virtual chapters download as their real source chapter, once per mirror (string check, no SQL).
+        ForkMergeHooks.redirectDownloads(chapters)?.let { redirected ->
+            return enqueue(EnqueueInput(redirected))
+        }
 
         val mangas =
             transaction {

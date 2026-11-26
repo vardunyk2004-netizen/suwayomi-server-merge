@@ -32,6 +32,7 @@ import org.cef.network.CefCookieManager
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import suwayomi.tachidesk.fork.maintenance.ForkScheduler
 import suwayomi.tachidesk.global.impl.KcefWebView.Companion.toCefCookie
 import suwayomi.tachidesk.global.impl.sync.SyncManager
 import suwayomi.tachidesk.graphql.types.DatabaseType
@@ -458,6 +459,9 @@ fun applicationSetup() {
     DownloadManager.restoreAndResumeDownloads()
 
     SyncManager.scheduleSyncTask()
+
+    // fork: daily maintenance (trash retention, scheduled doctor report, duplicate signatures); gated, no SQL when off
+    ForkScheduler.start()
 
     // asynchronously initialize CEF
     GlobalScope.launch {

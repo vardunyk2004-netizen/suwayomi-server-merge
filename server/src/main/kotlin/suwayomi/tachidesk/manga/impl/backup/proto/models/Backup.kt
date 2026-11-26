@@ -2,6 +2,7 @@ package suwayomi.tachidesk.manga.impl.backup.proto.models
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
+import suwayomi.tachidesk.fork.backup.BackupForkData
 import xyz.nulldev.androidcompat.util.SafePath
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -16,6 +17,8 @@ data class Backup(
     // suwayomi
     @ProtoNumber(9000) var meta: Map<String, String> = emptyMap(),
     @ProtoNumber(9001) var serverSettings: BackupServerSettings? = null,
+    // fork (Suwayomi Next): merge groups keyed by (source id, url); unknown to stock readers, which skip it
+    @ProtoNumber(1500) var forkData: BackupForkData? = null,
 ) {
     fun getSourceMap(): Map<Long, String> =
         backupSources

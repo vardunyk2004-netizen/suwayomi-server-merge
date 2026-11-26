@@ -21,6 +21,7 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import suwayomi.tachidesk.fork.backup.ForkBackup
 import suwayomi.tachidesk.graphql.types.StartSyncResult
 import suwayomi.tachidesk.manga.impl.Category
 import suwayomi.tachidesk.manga.impl.Library.handleMangaThumbnail
@@ -212,7 +213,10 @@ object SyncManager {
             }
             val since = if (full) null else lastPushedAt()
             val backupMangas =
-                BackupMangaHandler.backup(backupFlags, since).let { if (since == null) it else changedSince(it, since) }
+                BackupMangaHandler
+                    .backup(backupFlags, since)
+                    .let { if (since == null) it else changedSince(it, since) }
+                    .let(ForkBackup::excludeMergedFromSync) // D14/R10: merged rows never sync (setting 1050)
             val backupCategories =
                 BackupCategoryHandler.backup(backupFlags).filter { it.name != Category.DEFAULT_CATEGORY_NAME }
             toWireCategoryOrders(backupCategories, backupMangas)

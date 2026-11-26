@@ -20,6 +20,7 @@ import okio.Sink
 import okio.buffer
 import okio.gzip
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import suwayomi.tachidesk.fork.backup.ForkBackup
 import suwayomi.tachidesk.manga.impl.backup.BackupFlags
 import suwayomi.tachidesk.manga.impl.backup.proto.handlers.BackupCategoryHandler
 import suwayomi.tachidesk.manga.impl.backup.proto.handlers.BackupGlobalMetaHandler
@@ -150,13 +151,15 @@ object ProtoBackupExport : ProtoBackupBase() {
         // Create root object
         val backup: Backup =
             transaction {
-                val backupMangas = BackupMangaHandler.backup(flags)
+                // F9: merged manga travel in the fork section, never as rows with the reserved source (D13).
+                val backupMangas = ForkBackup.excludeMergedFromExport(BackupMangaHandler.backup(flags))
                 Backup(
                     backupMangas,
                     BackupCategoryHandler.backup(flags),
                     BackupSourceHandler.backup(backupMangas, flags),
                     BackupGlobalMetaHandler.backup(flags),
                     BackupSettingsHandler.backup(flags),
+                    forkData = if (flags.includeManga) ForkBackup.export() else null,
                 )
             }
 

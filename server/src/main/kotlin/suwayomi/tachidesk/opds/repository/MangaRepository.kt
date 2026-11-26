@@ -21,6 +21,7 @@ import org.jetbrains.exposed.v1.jdbc.Query
 import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import suwayomi.tachidesk.fork.lifecycle.ForkVisibility
 import suwayomi.tachidesk.manga.impl.MangaList.insertOrUpdate
 import suwayomi.tachidesk.manga.impl.util.source.GetSource
 import suwayomi.tachidesk.manga.model.dataclass.toGenreList
@@ -160,7 +161,7 @@ object MangaRepository {
             val query =
                 baseJoin
                     .select(MangaTable.columns + SourceTable.lang + SourceTable.name + unreadCount)
-                    .where { MangaTable.inLibrary eq true }
+                    .where { ForkVisibility.opds(MangaTable.inLibrary eq true) }
 
             query.applyOpdsMangaFilter(criteria)
             applyMangaLibrarySort(query, sort)
@@ -260,7 +261,7 @@ object MangaRepository {
     fun findMangaByCriteria(criteria: OpdsSearchCriteria): Pair<List<OpdsMangaAcqEntry>, Long> =
         transaction {
             val conditions = mutableListOf<Op<Boolean>>()
-            conditions += (MangaTable.inLibrary eq true)
+            conditions += ForkVisibility.opds(MangaTable.inLibrary eq true)
 
             criteria.query?.takeIf { it.isNotBlank() }?.let { q ->
                 val lowerQ = q.lowercase()
@@ -361,7 +362,7 @@ object MangaRepository {
             val baseQuery =
                 baseJoin
                     .select(MangaTable.id)
-                    .where { MangaTable.inLibrary eq true }
+                    .where { ForkVisibility.opds(MangaTable.inLibrary eq true) }
                     .withDistinct()
 
             baseQuery.applyOpdsMangaFilter(activeFilters, excludeField = "filter")

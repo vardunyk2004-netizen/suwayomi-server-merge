@@ -18,6 +18,7 @@ import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import suwayomi.tachidesk.fork.lifecycle.ForkVisibility
 import suwayomi.tachidesk.graphql.directives.RequireAuth
 import suwayomi.tachidesk.graphql.queries.filter.BooleanFilter
 import suwayomi.tachidesk.graphql.queries.filter.DoubleFilter
@@ -229,6 +230,8 @@ class ChapterQuery {
                         innerJoin(MangaTable)
                     }
                     res.andWhere { libraryOp }
+                    // R4: Updates/History show one entry per series (no-op unless merge is enabled).
+                    ForkVisibility.applyTo(res)
                 }
 
                 res.applyOps(condition, filter)

@@ -19,6 +19,7 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import suwayomi.tachidesk.fork.progress.ForkProgressService
 import suwayomi.tachidesk.graphql.types.KoSyncStatusPayload
 import suwayomi.tachidesk.graphql.types.KoreaderSyncChecksumMethod
 import suwayomi.tachidesk.graphql.types.KoreaderSyncConflictStrategy
@@ -119,9 +120,14 @@ object KoreaderSyncService {
         return suspendTransaction {
             val chapterRow =
                 ChapterTable
-                    .select(ChapterTable.koreaderHash, ChapterTable.manga, ChapterTable.isDownloaded)
+                    .select(ChapterTable.koreaderHash, ChapterTable.manga, ChapterTable.isDownloaded, ChapterTable.url)
                     .where { ChapterTable.id eq chapterId }
                     .firstOrNull() ?: return@suspendTransaction null
+
+            // D13: a merged (virtual) chapter uses its source chapter's hash; string check only for normal rows.
+            ForkProgressService.default.koreaderSourceChapterId(chapterId, chapterRow[ChapterTable.url])?.let { sourceChapterId ->
+                return@suspendTransaction getOrGenerateChapterHash(sourceChapterId)
+            }
 
             val existingHash = chapterRow[ChapterTable.koreaderHash]
             if (!existingHash.isNullOrBlank()) {

@@ -8,6 +8,7 @@ import org.jetbrains.exposed.v1.core.countDistinct
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import suwayomi.tachidesk.fork.lifecycle.ForkVisibility
 import suwayomi.tachidesk.i18n.MR
 import suwayomi.tachidesk.manga.impl.extension.Extension
 import suwayomi.tachidesk.manga.model.table.CategoryMangaTable
@@ -177,7 +178,7 @@ object NavigationRepository {
             val query =
                 baseJoin
                     .select(SourceTable.id, SourceTable.name, SourceTable.lang, ExtensionTable.pkgName, mangaCount)
-                    .where { MangaTable.inLibrary eq true }
+                    .where { ForkVisibility.opds(MangaTable.inLibrary eq true) }
 
             query.applyOpdsMangaFilter(activeFilters, excludeField = "source_id")
 
@@ -232,7 +233,7 @@ object NavigationRepository {
                     .join(MangaTable, JoinType.INNER, CategoryMangaTable.manga, MangaTable.id)
                     .join(SourceTable, JoinType.INNER, MangaTable.sourceReference, SourceTable.id)
                     .select(CategoryTable.id, CategoryTable.name, mangaCount)
-                    .where { MangaTable.inLibrary eq true }
+                    .where { ForkVisibility.opds(MangaTable.inLibrary eq true) }
 
             query.applyOpdsMangaFilter(activeFilters, excludeField = "category_id")
 
@@ -275,7 +276,7 @@ object NavigationRepository {
             val query =
                 baseJoin
                     .select(MangaTable.genre)
-                    .where { MangaTable.inLibrary eq true }
+                    .where { ForkVisibility.opds(MangaTable.inLibrary eq true) }
 
             query.applyOpdsMangaFilter(activeFilters, excludeField = "genre")
 
@@ -339,7 +340,7 @@ object NavigationRepository {
                 val query =
                     baseJoin
                         .select(MangaTable.status, countExpr)
-                        .where { MangaTable.inLibrary eq true }
+                        .where { ForkVisibility.opds(MangaTable.inLibrary eq true) }
 
                 query.applyOpdsMangaFilter(activeFilters, excludeField = "status_id")
 
@@ -391,7 +392,7 @@ object NavigationRepository {
             val query =
                 baseJoin
                     .select(SourceTable.lang, mangaCount)
-                    .where { MangaTable.inLibrary eq true }
+                    .where { ForkVisibility.opds(MangaTable.inLibrary eq true) }
 
             query.applyOpdsMangaFilter(activeFilters, excludeField = "lang_code")
 

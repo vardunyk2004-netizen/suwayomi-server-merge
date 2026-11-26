@@ -15,6 +15,7 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import suwayomi.tachidesk.fork.progress.ForkProgressService
 import suwayomi.tachidesk.manga.impl.CategoryManga
 import suwayomi.tachidesk.manga.impl.Chapter
 import suwayomi.tachidesk.manga.impl.ChapterDownloadHelper
@@ -361,6 +362,7 @@ object MangaController {
                                         it[lastReadAt] = syncResult.timestamp
                                     }
                                 }
+                                ForkProgressService.default.afterWrite(listOf(chapter.id))
                             }
                             // For PROMPT, SILENT, and RECEIVE, return the remote progress
                             chapter =

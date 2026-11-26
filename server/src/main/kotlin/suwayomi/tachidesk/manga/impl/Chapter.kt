@@ -33,6 +33,7 @@ import org.jetbrains.exposed.v1.jdbc.statements.toExecutable
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import suwayomi.tachidesk.fork.progress.ForkProgressService
 import suwayomi.tachidesk.manga.impl.download.DownloadManager
 import suwayomi.tachidesk.manga.impl.download.DownloadManager.EnqueueInput
 import suwayomi.tachidesk.manga.impl.track.Track
@@ -490,6 +491,10 @@ object Chapter {
                 chapterIdValue
             }
 
+        // Fork R2 chokepoint: in-memory gate first; no SQL when merge/progress sync is off.
+        ForkProgressService.default.afterWrite(listOf(chapterId))
+        if (markPrevRead != null) ForkProgressService.default.afterMarkPrevious(mangaId, chapterIndex)
+
         if (isRead == true || markPrevRead == true) {
             Track.asyncTrackChapter(setOf(mangaId))
         }
@@ -582,6 +587,13 @@ object Chapter {
                     update[lastReadAt] = now
                 }
             }
+        }
+
+        // Fork R2 chokepoint (no SQL unless merge progress sync is active).
+        if (ForkProgressService.default.isActive()) {
+            ForkProgressService.default.afterWrite(
+                transaction { ChapterTable.select(ChapterTable.id).where(condition).map { it[ChapterTable.id].value } },
+            )
         }
 
         if (isRead == true) {

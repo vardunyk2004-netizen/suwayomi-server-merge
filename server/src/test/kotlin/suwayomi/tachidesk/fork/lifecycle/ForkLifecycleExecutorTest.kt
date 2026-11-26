@@ -1,0 +1,179 @@
+package suwayomi.tachidesk.fork.lifecycle
+
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import suwayomi.tachidesk.fork.ForkClock
+import suwayomi.tachidesk.fork.ForkGate
+import suwayomi.tachidesk.fork.ForkLifecyclePolicy
+import suwayomi.tachidesk.fork.ForkRequestException
+import suwayomi.tachidesk.fork.ForkTestFixtures
+import suwayomi.tachidesk.fork.merge.CreateMergeRequest
+import suwayomi.tachidesk.fork.merge.ForkMergeService
+import suwayomi.tachidesk.fork.merge.MergeMode
+import suwayomi.tachidesk.fork.progress.ForkProgressService
+import suwayomi.tachidesk.manga.model.table.ChapterTable
+import suwayomi.tachidesk.manga.model.table.MangaTable
+import suwayomi.tachidesk.server.ApplicationDirs
+import suwayomi.tachidesk.test.ApplicationTest
+import suwayomi.tachidesk.test.captureStateSnapshot
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+import java.io.File
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+/** Snapshot tests per deletion-matrix row (F5). Written for CI; not run in the authoring sandbox. */
+class ForkLifecycleExecutorTest : ApplicationTest() {
+    private var policy = ForkLifecyclePolicy()
+    private val merge = ForkMergeService(gate = ForkGate.allOn, policy = { ForkTestFixtures.allOnMergePolicy })
+    private val progress = ForkProgressService(gate = ForkGate.allOn, policy = { ForkTestFixtures.allOnProgressPolicy })
+    private val executor =
+        ForkLifecycleExecutor(
+            gate = ForkGate.allOn,
+            policy = { policy },
+            mergePolicy = { ForkTestFixtures.allOnMergePolicy },
+            merge = merge,
+            progress = progress,
+        )
+
+    @BeforeEach
+    fun setUp() {
+        policy = ForkLifecyclePolicy()
+        ForkTestFixtures.reset()
+    }
+
+    @AfterEach
+    fun tearDown() {
+        ForkClock.nowSeconds = { System.currentTimeMillis() / 1000 }
+        ForkTestFixtures.reset()
+    }
+
+    private data class Fixture(
+        val a: Int,
+        val b: Int,
+        val c: Int,
+        val merged: Int,
+        val groupId: Int,
+        val aChapter: Int,
+    )
+
+    private fun fixture(): Fixture {
+        val a = ForkTestFixtures.manga("Src A")
+        val b = ForkTestFixtures.manga("Src B")
+        val c = ForkTestFixtures.manga("Src C")
+        val aChapter = ForkTestFixtures.chapter(a, 1f, 1, pageCount = 10)
+        ForkTestFixtures.chapter(b, 1f, 1, pageCount = 10)
+        ForkTestFixtures.chapter(c, 2f, 1, pageCount = 10)
+        val result = merge.create(CreateMergeRequest(listOf(a, b, c), MergeMode.MIRROR))
+        return Fixture(a, b, c, result.mergedMangaId, result.groupId, aChapter)
+    }
+
+    @Test
+    fun `D3 unmerge removes virtual rows and keeps source progress`() {
+        val f = fixture()
+        val virtual = ForkTestFixtures.chaptersOf(f.merged).first { it[ChapterTable.chapter_number] == 1f }[ChapterTable.id].value
+        transaction {
+            ChapterTable.update({ ChapterTable.id eq virtual }) {
+                it[ChapterTable.isRead] = true
+                it[ChapterTable.lastPageRead] = 9
+                it[ChapterTable.lastReadAt] = 5_000
+            }
+        }
+        val outcome = executor.apply(LifecycleActionRequest(LifecycleAction.UNMERGE, f.merged))
+
+        assertTrue(ForkTestFixtures.chaptersOf(f.merged).isEmpty(), "no ghost virtual rows (D3)")
+        assertTrue(ForkTestFixtures.chapterRow(f.aChapter)[ChapterTable.isRead], "progress written back")
+        assertEquals(LifecycleState.ACTIVE, ForkLifecycleStore.stateOf(f.a))
+        assertEquals(LifecycleState.SOFT_REMOVED, ForkLifecycleStore.stateOf(f.merged))
+        assertTrue(outcome.progressWrittenBack > 0)
+
+        executor.undo(outcome.journalId)
+        assertEquals(LifecycleState.HIDDEN_BY_MERGE, ForkLifecycleStore.stateOf(f.a))
+        assertTrue(ForkTestFixtures.chaptersOf(f.merged).isNotEmpty(), "undo rebuilds the merge")
+    }
+
+    @Test
+    fun `D4 removing a source makes it visible and keeps the minimum`() {
+        val f = fixture()
+        executor.apply(LifecycleActionRequest(LifecycleAction.REMOVE_SOURCE_FROM_MERGE, f.merged, sourceMangaId = f.c))
+        assertEquals(LifecycleState.ACTIVE, ForkLifecycleStore.stateOf(f.c))
+        // Two sources left: the planner refuses before anything is written.
+        assertFailsWith<IllegalArgumentException> {
+            executor.apply(LifecycleActionRequest(LifecycleAction.REMOVE_SOURCE_FROM_MERGE, f.merged, sourceMangaId = f.b))
+        }
+        assertEquals(LifecycleState.HIDDEN_BY_MERGE, ForkLifecycleStore.stateOf(f.b))
+        assertTrue(ForkTestFixtures.chaptersOf(f.merged).none { it[ChapterTable.chapter_number] == 2f }, "c's chapter left the merge")
+    }
+
+    @Test
+    fun `D5 removing the merged manga leaves a removed source removed`() {
+        val f = fixture()
+        transaction {
+            MangaTable.update({ MangaTable.id eq f.a }) { it[MangaTable.inLibrary] = false }
+        }
+        executor.apply(LifecycleActionRequest(LifecycleAction.REMOVE_MERGED, f.merged))
+        assertEquals(false, ForkTestFixtures.mangaRow(f.a)!![MangaTable.inLibrary])
+        assertEquals(LifecycleState.HIDDEN_BY_MERGE, ForkLifecycleStore.stateOf(f.b), "restoreSources defaults to false (setting 1032)")
+    }
+
+    @Test
+    fun `D16 removing merged with delete downloads keeps source files`() {
+        val f = fixture()
+        val downloads = File(Injekt.get<ApplicationDirs>().downloadsRoot)
+        val sourceFile =
+            File(downloads, "fork-test/Src A/Chapter 1/001.png").apply {
+                parentFile.mkdirs()
+                writeBytes(byteArrayOf(1, 2, 3))
+            }
+        val before = captureStateSnapshot(downloads)
+        executor.apply(LifecycleActionRequest(LifecycleAction.REMOVE_MERGED, f.merged, deleteMaterializedDownloads = true))
+        val after = captureStateSnapshot(downloads)
+
+        assertEquals(before.downloadFiles, after.downloadFiles, "no file changed")
+        assertTrue(sourceFile.exists())
+        // Soft removal only writes the fork lifecycle row: every upstream table is byte-identical.
+        listOf("manga", "chapter", "categorymanga", "trackrecord").forEach { table ->
+            assertEquals(before.database[table], after.database[table], "$table changed")
+        }
+        sourceFile.parentFile.parentFile.parentFile.deleteRecursively()
+    }
+
+    @Test
+    fun `D22 trash lists restores and retention purges`() {
+        val f = fixture()
+        ForkClock.nowSeconds = { 1_000_000 }
+        executor.apply(LifecycleActionRequest(LifecycleAction.SOFT_REMOVE, f.merged, reason = "test"))
+        val item = executor.trash().single()
+        assertEquals(f.merged, item.mangaId)
+        assertEquals(1_000_000 + 30 * 86_400L, item.purgeAfter)
+
+        executor.restoreFromTrash(f.merged)
+        assertTrue(executor.trash().isEmpty())
+
+        executor.apply(LifecycleActionRequest(LifecycleAction.SOFT_REMOVE, f.merged))
+        ForkClock.nowSeconds = { 1_000_000 + 31 * 86_400L }
+        assertEquals(1, executor.purgeExpired())
+        assertNull(ForkTestFixtures.mangaRow(f.merged), "merged row purged")
+        assertEquals(LifecycleState.ACTIVE, ForkLifecycleStore.stateOf(f.a), "sources are released, never stuck hidden")
+        assertTrue(ForkTestFixtures.mangaRow(f.a)!![MangaTable.inLibrary], "source rows untouched")
+    }
+
+    @Test
+    fun `purge needs the nonce and the typed confirmation`() {
+        val f = fixture()
+        executor.apply(LifecycleActionRequest(LifecycleAction.SOFT_REMOVE, f.merged))
+        val preview = executor.previewPurge(listOf(f.merged))
+        assertEquals(0, preview.sourceRowsDeleted)
+        assertEquals(0, preview.sourceFilesDeleted)
+        assertEquals("CONFIRMATION_REQUIRED", assertFailsWith<ForkRequestException> { executor.confirmPurge(preview.nonce, "purge") }.code)
+        val again = executor.previewPurge(listOf(f.merged))
+        assertEquals(1, executor.confirmPurge(again.nonce, "PURGE"))
+        assertEquals("NONCE_INVALID", assertFailsWith<ForkRequestException> { executor.confirmPurge(again.nonce, "PURGE") }.code)
+    }
+}

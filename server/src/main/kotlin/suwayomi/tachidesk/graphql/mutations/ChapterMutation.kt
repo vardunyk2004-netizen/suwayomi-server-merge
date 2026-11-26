@@ -20,6 +20,7 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.statements.toExecutable
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import suwayomi.tachidesk.fork.progress.ForkProgressService
 import suwayomi.tachidesk.graphql.directives.RequireAuth
 import suwayomi.tachidesk.graphql.types.ChapterMetaType
 import suwayomi.tachidesk.graphql.types.ChapterType
@@ -112,6 +113,11 @@ class ChapterMutation {
                     }.toExecutable()
                     .execute(this@transaction)
             }
+        }
+
+        // Fork R2 chokepoint (no SQL unless merge progress sync is active).
+        if (patch.isRead != null || patch.isBookmarked != null || patch.lastPageRead != null) {
+            ForkProgressService.default.afterWrite(ids)
         }
 
         // Sync with KoreaderSync when progress is updated
@@ -429,6 +435,7 @@ class ChapterMutation {
                             it[lastReadAt] = syncResult.timestamp
                         }
                     }
+                    ForkProgressService.default.afterWrite(listOf(chapter.id))
                 }
                 // For PROMPT, SILENT, and RECEIVE, return the remote progress
                 chapter =

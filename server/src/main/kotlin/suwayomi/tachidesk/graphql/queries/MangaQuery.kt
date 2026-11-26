@@ -21,6 +21,7 @@ import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import suwayomi.tachidesk.fork.lifecycle.ForkVisibility
 import suwayomi.tachidesk.graphql.directives.RequireAuth
 import suwayomi.tachidesk.graphql.queries.filter.BooleanFilter
 import suwayomi.tachidesk.graphql.queries.filter.ComparableScalarFilter
@@ -264,6 +265,11 @@ class MangaQuery {
                     } else {
                         MangaTable.selectAll().applyOps(condition, filter)
                     }
+
+                // R4: library lists hide merge sources and trashed manga (no-op unless merge is enabled).
+                if (condition?.inLibrary == true || filter?.inLibrary?.equalTo == true) {
+                    ForkVisibility.applyTo(res)
+                }
 
                 val baseSort = listOf(MangaOrder(MangaOrderBy.ID, SortOrder.ASC))
                 val deprecatedSort = listOfNotNull(orderBy?.let { MangaOrder(orderBy, orderByType) })

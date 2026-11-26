@@ -20,6 +20,7 @@ import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import suwayomi.tachidesk.fork.lifecycle.ForkVisibility
 import suwayomi.tachidesk.manga.impl.ChapterDownloadHelper
 import suwayomi.tachidesk.manga.impl.chapter.getChapterDownloadReady
 import suwayomi.tachidesk.manga.impl.chapter.refreshChapterPageList
@@ -220,7 +221,7 @@ object ChapterRepository {
                     .select(
                         ChapterTable.columns + MangaTable.title + MangaTable.author + MangaTable.thumbnail_url + MangaTable.id +
                             SourceTable.lang,
-                    ).where { MangaTable.inLibrary eq true }
+                    ).where { ForkVisibility.opds(MangaTable.inLibrary eq true) }
 
             val totalCount = query.count()
 

@@ -22,6 +22,7 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import suwayomi.tachidesk.fork.merge.ForkPageResolver
 import suwayomi.tachidesk.manga.impl.ChapterDownloadHelper
 import suwayomi.tachidesk.manga.impl.util.source.GetSource.getSourceOrStub
 import suwayomi.tachidesk.manga.model.dataclass.ChapterDataClass
@@ -120,6 +121,8 @@ suspend fun getChapterDownloadReady(
     mangaId: Int? = null,
 ): ChapterDataClass {
     val chapter = ChapterForDownload(chapterId, chapterIndex, mangaId)
+    // F7: virtual chapters resolve to their source chapter(s); null for stock rows (string check, no SQL).
+    ForkPageResolver.virtualDownloadReady(chapter.chapterEntry)?.let { return it }
     return chapter.asDownloadReady()
 }
 

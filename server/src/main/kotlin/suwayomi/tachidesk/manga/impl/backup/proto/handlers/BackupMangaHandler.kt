@@ -28,6 +28,7 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.statements.toExecutable
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import suwayomi.tachidesk.fork.progress.ForkProgressService
 import suwayomi.tachidesk.manga.impl.CategoryManga
 import suwayomi.tachidesk.manga.impl.Chapter
 import suwayomi.tachidesk.manga.impl.Chapter.modifyChaptersMetas
@@ -459,6 +460,13 @@ object BackupMangaHandler {
                     }
                 }.toExecutable()
                 .execute(this@dbTransaction)
+        }
+
+        // Fork R2 chokepoint: restored progress reaches linked merged chapters (no SQL when inactive).
+        if (flags.includeChapters) {
+            ForkProgressService.default.afterWrite(
+                insertedChapterIds + chaptersToUpdateToDbChapter.map { (_, dbChapter) -> dbChapter[ChapterTable.id].value },
+            )
         }
 
         if (flags.includeClientData) {

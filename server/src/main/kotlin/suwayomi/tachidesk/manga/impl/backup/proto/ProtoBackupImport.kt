@@ -24,6 +24,7 @@ import okio.source
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import suwayomi.tachidesk.fork.backup.ForkBackup
 import suwayomi.tachidesk.graphql.types.toStatus
 import suwayomi.tachidesk.manga.impl.backup.BackupFlags
 import suwayomi.tachidesk.manga.impl.backup.proto.ProtoBackupValidator.ValidationResult
@@ -281,6 +282,9 @@ object ProtoBackupImport : ProtoBackupBase() {
                     syncMode = syncMode,
                 )
             }
+
+            // F9: merge groups after their sources exist (no-op when merge or merge backup is off).
+            ForkBackup.restore(backup.forkData).skipped.forEach { reason -> errors.add(Date() to "Merge: $reason") }
         }
 
         logger.info {

@@ -26,6 +26,10 @@ import suwayomi.tachidesk.graphql.mutations.ChapterMutation
 import suwayomi.tachidesk.graphql.mutations.DownloadMutation
 import suwayomi.tachidesk.graphql.mutations.ExtensionMutation
 import suwayomi.tachidesk.graphql.mutations.ExtensionStoreMutation
+import suwayomi.tachidesk.graphql.mutations.ForkLifecycleMutation
+import suwayomi.tachidesk.graphql.mutations.ForkMaintenanceMutation
+import suwayomi.tachidesk.graphql.mutations.ForkMaintenanceQuery
+import suwayomi.tachidesk.graphql.mutations.ForkMergeMutation
 import suwayomi.tachidesk.graphql.mutations.ImageMutation
 import suwayomi.tachidesk.graphql.mutations.InfoMutation
 import suwayomi.tachidesk.graphql.mutations.KoreaderSyncMutation
@@ -44,6 +48,7 @@ import suwayomi.tachidesk.graphql.queries.ChapterQuery
 import suwayomi.tachidesk.graphql.queries.DownloadQuery
 import suwayomi.tachidesk.graphql.queries.ExtensionQuery
 import suwayomi.tachidesk.graphql.queries.ExtensionStoreQuery
+import suwayomi.tachidesk.graphql.queries.ForkQuery
 import suwayomi.tachidesk.graphql.queries.InfoQuery
 import suwayomi.tachidesk.graphql.queries.KoreaderSyncQuery
 import suwayomi.tachidesk.graphql.queries.MangaQuery
@@ -107,6 +112,8 @@ object GraphQLSchemaProvider {
                         TopLevelObject(DownloadQuery()),
                         TopLevelObject(ExtensionQuery()),
                         TopLevelObject(ExtensionStoreQuery()),
+                        TopLevelObject(ForkMaintenanceQuery()),
+                        TopLevelObject(ForkQuery()),
                         TopLevelObject(InfoQuery()),
                         TopLevelObject(KoreaderSyncQuery()),
                         TopLevelObject(MangaQuery()),
@@ -125,6 +132,9 @@ object GraphQLSchemaProvider {
                         TopLevelObject(DownloadMutation()),
                         TopLevelObject(ExtensionMutation()),
                         TopLevelObject(ExtensionStoreMutation()),
+                        TopLevelObject(ForkLifecycleMutation()),
+                        TopLevelObject(ForkMaintenanceMutation()),
+                        TopLevelObject(ForkMergeMutation()),
                         TopLevelObject(ImageMutation()),
                         TopLevelObject(InfoMutation()),
                         TopLevelObject(KoreaderSyncMutation()),
