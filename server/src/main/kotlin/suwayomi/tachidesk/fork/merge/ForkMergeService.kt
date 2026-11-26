@@ -526,8 +526,7 @@ class ForkMergeService(
                     .where {
                         (ForkChapterLinkTable.sourceMangaId eq removedSourceMangaId) and
                             (ForkChapterLinkTable.mergedChapterId inList existing.values.map { it[ChapterTable.id].value })
-                    }
-                    .map { it[ForkChapterLinkTable.mergedChapterId] }
+                    }.map { it[ForkChapterLinkTable.mergedChapterId] }
                     .toSet()
             }
         val (toDelete, toFlag) =
