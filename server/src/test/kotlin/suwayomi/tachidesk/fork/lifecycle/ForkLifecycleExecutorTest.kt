@@ -141,7 +141,10 @@ class ForkLifecycleExecutorTest : ApplicationTest() {
         listOf("manga", "chapter", "categorymanga", "trackrecord").forEach { table ->
             assertEquals(before.database[table], after.database[table], "$table changed")
         }
-        sourceFile.parentFile.parentFile.parentFile.deleteRecursively()
+        sourceFile.parentFile
+            .parentFile
+            .parentFile
+            .deleteRecursively()
     }
 
     @Test

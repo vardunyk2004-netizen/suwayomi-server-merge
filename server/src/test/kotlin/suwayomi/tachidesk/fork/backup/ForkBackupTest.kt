@@ -43,8 +43,21 @@ class ForkBackupTest {
                 Backup(backupCategories = listOf(BackupCategory("Reading", 1)), forkData = forkData),
             )
         val decoded = ProtoBuf.decodeFromByteArray(Backup.serializer(), bytes)
-        assertEquals("Merged", decoded.forkData!!.groups.single().title)
-        assertEquals(listOf(42L, 43L), decoded.forkData!!.groups.single().sources.map { it.sourceId })
+        assertEquals(
+            "Merged",
+            decoded.forkData!!
+                .groups
+                .single()
+                .title,
+        )
+        assertEquals(
+            listOf(42L, 43L),
+            decoded.forkData!!
+                .groups
+                .single()
+                .sources
+                .map { it.sourceId },
+        )
     }
 
     @Test

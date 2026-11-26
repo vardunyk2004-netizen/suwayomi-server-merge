@@ -36,8 +36,20 @@ class ForkMergePlannerTest {
 
         assertEquals(listOf(1f, 1.5f, 2f), result.entries.map { it.number })
         assertEquals(listOf("Start", "Extra", "Next"), result.entries.map { it.primary.name })
-        assertEquals("GroupA", result.entries.first().primary.scanlator)
-        assertEquals(listOf(2), result.entries.first().fallbacks.map { it.sourceMangaId })
+        assertEquals(
+            "GroupA",
+            result.entries
+                .first()
+                .primary
+                .scanlator,
+        )
+        assertEquals(
+            listOf(2),
+            result.entries
+                .first()
+                .fallbacks
+                .map { it.sourceMangaId },
+        )
     }
 
     @Test
@@ -69,14 +81,26 @@ class ForkMergePlannerTest {
         val a = PlanSource(1, 0, 0f, true, listOf(ch(1, 1f, 1, pages = 5, upload = 100)))
         val b = PlanSource(2, 1, 0f, true, listOf(ch(2, 1f, 1, pages = 9, upload = 50)))
 
-        assertEquals(1, plan(MergeMode.MIRROR, listOf(a, b)).entries.single().primary.sourceMangaId)
+        assertEquals(
+            1,
+            plan(MergeMode.MIRROR, listOf(a, b)).entries
+                .single()
+                .primary
+                .sourceMangaId,
+        )
         assertEquals(
             2,
-            plan(MergeMode.MIRROR, listOf(a, b), strategy = MergeDedupeStrategy.MOST_PAGES).entries.single().primary.sourceMangaId,
+            plan(MergeMode.MIRROR, listOf(a, b), strategy = MergeDedupeStrategy.MOST_PAGES).entries
+                .single()
+                .primary
+                .sourceMangaId,
         )
         assertEquals(
             1,
-            plan(MergeMode.MIRROR, listOf(a, b), strategy = MergeDedupeStrategy.NEWEST_UPLOAD).entries.single().primary.sourceMangaId,
+            plan(MergeMode.MIRROR, listOf(a, b), strategy = MergeDedupeStrategy.NEWEST_UPLOAD).entries
+                .single()
+                .primary
+                .sourceMangaId,
         )
         val manual = plan(MergeMode.MIRROR, listOf(a, b), strategy = MergeDedupeStrategy.MANUAL_PER_CHAPTER)
         assertTrue(manual.entries.single().needsManualChoice)
@@ -87,7 +111,13 @@ class ForkMergePlannerTest {
                 MergeOptions(preferredSourceByEntry = mapOf("n:1" to 2)),
                 MergeDedupeStrategy.MANUAL_PER_CHAPTER,
             )
-        assertEquals(2, chosen.entries.single().primary.sourceMangaId)
+        assertEquals(
+            2,
+            chosen.entries
+                .single()
+                .primary
+                .sourceMangaId,
+        )
     }
 
     @Test
@@ -109,7 +139,15 @@ class ForkMergePlannerTest {
         assertEquals(listOf("p:split:${c1.id}:000"), result.entries.map { it.entryKey })
         assertEquals(listOf("n:2"), result.excludedEntryKeys)
         assertEquals(LinkKind.PART, result.entries.single().kind)
-        assertEquals(c1.id, result.entries.single().parts.single().sourceChapterId, "parts point at the real chapter (D1)")
+        assertEquals(
+            c1.id,
+            result.entries
+                .single()
+                .parts
+                .single()
+                .sourceChapterId,
+            "parts point at the real chapter (D1)",
+        )
     }
 
     @Test
@@ -140,6 +178,14 @@ class ForkMergePlannerTest {
     @Test
     fun `reserved merged source id matches the WebUI constant`() {
         assertEquals("6005353588250330436", ForkMergedSource.ID.toString())
-        assertEquals("SWMERGED", String(java.nio.ByteBuffer.allocate(8).putLong(ForkMergedSource.ID).array(), Charsets.US_ASCII))
+        assertEquals(
+            "SWMERGED",
+            String(
+                java.nio.ByteBuffer.allocate(8)
+                    .putLong(ForkMergedSource.ID)
+                    .array(),
+                Charsets.US_ASCII,
+            ),
+        )
     }
 }
