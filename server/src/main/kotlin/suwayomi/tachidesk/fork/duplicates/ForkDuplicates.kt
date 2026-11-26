@@ -200,9 +200,11 @@ object ForkDuplicateScorer {
         val pairs = HashSet<Pair<Int, Int>>()
         blocks.values.forEach { ids ->
             val capped = ids.distinct().take(blockCap)
-            for (i in capped.indices) for (j in i + 1 until capped.size) {
-                val (x, y) = if (capped[i] < capped[j]) capped[i] to capped[j] else capped[j] to capped[i]
-                pairs += x to y
+            for (i in capped.indices) {
+                for (j in i + 1 until capped.size) {
+                    val (x, y) = if (capped[i] < capped[j]) capped[i] to capped[j] else capped[j] to capped[i]
+                    pairs += x to y
+                }
             }
         }
         return pairs
