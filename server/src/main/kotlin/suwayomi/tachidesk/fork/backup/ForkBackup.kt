@@ -262,14 +262,16 @@ object ForkBackup {
         val refs = portable.includedChapters + portable.partDefinitions.flatMap { d -> d.parts.map { it.chapter } }
         val chapterIdByRef =
             dbTransaction {
-                refs.distinct().mapNotNull { ref ->
+                refs
+                    .distinct()
+                    .mapNotNull { ref ->
                     val mangaId = sourceIds.getOrNull(ref.sourceIndex) ?: return@mapNotNull null
                     ChapterTable
                         .selectAll()
                         .where { (ChapterTable.manga eq mangaId) and (ChapterTable.url eq ref.url) }
                         .firstOrNull()
                         ?.let { ref to it[ChapterTable.id].value }
-                }.toMap()
+                    }.toMap()
             }
         return MergeOptions(
             dedupeStrategy = portable.dedupeStrategy,

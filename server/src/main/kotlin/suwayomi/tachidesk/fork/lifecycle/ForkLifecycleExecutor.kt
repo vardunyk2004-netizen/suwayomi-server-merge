@@ -311,19 +311,20 @@ class ForkLifecycleExecutor(
                     .where { MangaTable.id inList rows.map { it.mangaId } }
                     .associateBy { it[MangaTable.id].value }
             val retention = policy().retentionDays
-            rows.mapNotNull { row ->
-                val manga = mangas[row.mangaId] ?: return@mapNotNull null
-                val removedAt = row.changedAt ?: 0
-                TrashItem(
-                    mangaId = row.mangaId,
-                    title = manga[MangaTable.title],
-                    reason = row.reason,
-                    removedAt = removedAt,
-                    ownerGroupId = row.ownerGroupId,
-                    isMerged = manga[MangaTable.sourceReference] == ForkMergedSource.ID,
-                    purgeAfter = if (retention == 0) 0 else removedAt + retention * 86_400L,
-                )
-            }.sortedByDescending { it.removedAt }
+            rows
+                    .mapNotNull { row ->
+                        val manga = mangas[row.mangaId] ?: return@mapNotNull null
+                        val removedAt = row.changedAt ?: 0
+                        TrashItem(
+                            mangaId = row.mangaId,
+                            title = manga[MangaTable.title],
+                            reason = row.reason,
+                            removedAt = removedAt,
+                            ownerGroupId = row.ownerGroupId,
+                            isMerged = manga[MangaTable.sourceReference] == ForkMergedSource.ID,
+                            purgeAfter = if (retention == 0) 0 else removedAt + retention * 86_400L,
+                        )
+                    }.sortedByDescending { it.removedAt }
         }
     }
 
@@ -481,7 +482,15 @@ class ForkLifecycleExecutor(
         val rows = MangaTable.selectAll().where { MangaTable.id inList mangaIds }.toList()
         val mergedIds = rows.filter { it[MangaTable.sourceReference] == ForkMergedSource.ID }.map { it[MangaTable.id].value }
         val virtualChapters =
-            if (mergedIds.isEmpty()) 0 else ChapterTable.selectAll().where { ChapterTable.manga inList mergedIds }.count().toInt()
+            if (mergedIds.isEmpty()) {
+                0
+            } else {
+                ChapterTable
+                    .selectAll()
+                    .where { ChapterTable.manga inList mergedIds }
+                    .count()
+                    .toInt()
+            }
         return PurgeCounts(mergedIds.size, virtualChapters, rows.size - mergedIds.size)
     }
 

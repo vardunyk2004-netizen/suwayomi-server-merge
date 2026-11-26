@@ -69,7 +69,10 @@ object ForkMergePlanner {
                 }
             }
 
-        val hiddenByParts = input.options.partDefinitions.flatMap { it.hidesEntryKeys }.toSet()
+        val hiddenByParts =
+            input.options.partDefinitions
+                .flatMap { it.hidesEntryKeys }
+                .toSet()
         val excluded = input.options.excludedEntryKeys
         val chaptersById = input.sources.flatMap { it.chapters }.associateBy { it.id }
 
