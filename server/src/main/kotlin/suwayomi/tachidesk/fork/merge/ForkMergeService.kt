@@ -537,6 +537,7 @@ class ForkMergeService(
                     MergeChapterDisplay.ORIGINAL -> {
                         entry.primary.name
                     }
+
                     MergeChapterDisplay.NORMALIZED -> {
                         if (entry.number >= 0f) "Chapter ${formatNumber(entry.number)}" else entry.primary.name
                     }
