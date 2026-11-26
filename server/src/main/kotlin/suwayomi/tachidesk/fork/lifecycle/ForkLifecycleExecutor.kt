@@ -312,19 +312,19 @@ class ForkLifecycleExecutor(
                     .associateBy { it[MangaTable.id].value }
             val retention = policy().retentionDays
             rows
-                    .mapNotNull { row ->
-                        val manga = mangas[row.mangaId] ?: return@mapNotNull null
-                        val removedAt = row.changedAt ?: 0
-                        TrashItem(
-                            mangaId = row.mangaId,
-                            title = manga[MangaTable.title],
-                            reason = row.reason,
-                            removedAt = removedAt,
-                            ownerGroupId = row.ownerGroupId,
-                            isMerged = manga[MangaTable.sourceReference] == ForkMergedSource.ID,
-                            purgeAfter = if (retention == 0) 0 else removedAt + retention * 86_400L,
-                        )
-                    }.sortedByDescending { it.removedAt }
+                .mapNotNull { row ->
+                    val manga = mangas[row.mangaId] ?: return@mapNotNull null
+                    val removedAt = row.changedAt ?: 0
+                    TrashItem(
+                        mangaId = row.mangaId,
+                        title = manga[MangaTable.title],
+                        reason = row.reason,
+                        removedAt = removedAt,
+                        ownerGroupId = row.ownerGroupId,
+                        isMerged = manga[MangaTable.sourceReference] == ForkMergedSource.ID,
+                        purgeAfter = if (retention == 0) 0 else removedAt + retention * 86_400L,
+                    )
+                }.sortedByDescending { it.removedAt }
         }
     }
 

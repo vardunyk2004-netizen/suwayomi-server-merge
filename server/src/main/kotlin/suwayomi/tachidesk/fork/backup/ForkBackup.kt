@@ -265,12 +265,12 @@ object ForkBackup {
                 refs
                     .distinct()
                     .mapNotNull { ref ->
-                    val mangaId = sourceIds.getOrNull(ref.sourceIndex) ?: return@mapNotNull null
-                    ChapterTable
-                        .selectAll()
-                        .where { (ChapterTable.manga eq mangaId) and (ChapterTable.url eq ref.url) }
-                        .firstOrNull()
-                        ?.let { ref to it[ChapterTable.id].value }
+                        val mangaId = sourceIds.getOrNull(ref.sourceIndex) ?: return@mapNotNull null
+                        ChapterTable
+                            .selectAll()
+                            .where { (ChapterTable.manga eq mangaId) and (ChapterTable.url eq ref.url) }
+                            .firstOrNull()
+                            ?.let { ref to it[ChapterTable.id].value }
                     }.toMap()
             }
         return MergeOptions(
