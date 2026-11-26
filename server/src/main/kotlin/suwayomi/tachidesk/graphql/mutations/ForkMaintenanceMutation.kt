@@ -13,7 +13,7 @@ import suwayomi.tachidesk.graphql.types.ReindexAdoptMode
 import suwayomi.tachidesk.server.JavalinSetup.future
 import java.util.concurrent.CompletableFuture
 
-/* GraphQL types for F10-F12 (kept next to their resolvers; all names are fork-prefixed). */
+// GraphQL types for F10-F12 (kept next to their resolvers; all names are fork-prefixed).
 
 data class ForkDuplicateSignalType(
     val signal: String,
