@@ -1,5 +1,6 @@
 package suwayomi.tachidesk.fork.merge
 
+import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -49,7 +50,8 @@ class ForkMergeServiceTest : ApplicationTest() {
 
         val links =
             transaction {
-                (ForkChapterLinkTable innerJoin ChapterTable)
+                ForkChapterLinkTable
+                    .join(ChapterTable, JoinType.INNER, ForkChapterLinkTable.mergedChapterId, ChapterTable.id)
                     .selectAll()
                     .where { ChapterTable.manga eq result.mergedMangaId }
                     .orderBy(ChapterTable.sourceOrder)
