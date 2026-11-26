@@ -134,8 +134,12 @@ class ForkReindexService(
                     }
                 val (match, ids) =
                     when {
-                        exact.size == 1 -> ReindexMatch.EXACT to exact.map { it[ChapterTable.id].value }
-                        exact.size > 1 -> ReindexMatch.AMBIGUOUS to exact.map { it[ChapterTable.id].value }
+                        exact.size == 1 -> {
+                            ReindexMatch.EXACT to exact.map { it[ChapterTable.id].value }
+                        }
+                        exact.size > 1 -> {
+                            ReindexMatch.AMBIGUOUS to exact.map { it[ChapterTable.id].value }
+                        }
                         else -> {
                             val fuzzy =
                                 chapters.filter {

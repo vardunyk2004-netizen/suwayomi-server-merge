@@ -534,9 +534,12 @@ class ForkMergeService(
             val url = ForkMergePlanner.virtualChapterUrl(group.id, entry.entryKey)
             val name =
                 entry.nameOverride ?: when (display) {
-                    MergeChapterDisplay.ORIGINAL -> entry.primary.name
-                    MergeChapterDisplay.NORMALIZED ->
+                    MergeChapterDisplay.ORIGINAL -> {
+                        entry.primary.name
+                    }
+                    MergeChapterDisplay.NORMALIZED -> {
                         if (entry.number >= 0f) "Chapter ${formatNumber(entry.number)}" else entry.primary.name
+                    }
                 }
             val row = existing[url]
             val chapterId =
