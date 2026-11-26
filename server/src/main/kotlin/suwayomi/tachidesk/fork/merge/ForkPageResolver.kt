@@ -214,10 +214,9 @@ object ForkPageResolver {
         if (candidate.wholeChapter) {
             return Triple(candidate.sourceMangaId, candidate.ranges.single().sourceChapterId, index)
         }
-        val (chapterId, page) =
-            suwayomi.tachidesk.fork.progress.PartMapping(candidate.ranges)
-                .toSource(index)
-                ?: throw ForkResolutionException("RANGE_INVALID", "Page $index is outside this chapter")
+        val mapping = suwayomi.tachidesk.fork.progress.PartMapping(candidate.ranges)
+        val (chapterId, page) = mapping.toSource(index)
+            ?: throw ForkResolutionException("RANGE_INVALID", "Page $index is outside this chapter")
         val sourceMangaId = ForkMergeRepository.chaptersOfIds(listOf(chapterId))[chapterId] ?: candidate.sourceMangaId
         return Triple(sourceMangaId, chapterId, page)
     }
