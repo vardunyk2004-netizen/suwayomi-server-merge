@@ -83,21 +83,24 @@ class ForkMergePlannerTest {
 
         assertEquals(
             1,
-            plan(MergeMode.MIRROR, listOf(a, b)).entries
+            plan(MergeMode.MIRROR, listOf(a, b))
+                .entries
                 .single()
                 .primary
                 .sourceMangaId,
         )
         assertEquals(
             2,
-            plan(MergeMode.MIRROR, listOf(a, b), strategy = MergeDedupeStrategy.MOST_PAGES).entries
+            plan(MergeMode.MIRROR, listOf(a, b), strategy = MergeDedupeStrategy.MOST_PAGES)
+                .entries
                 .single()
                 .primary
                 .sourceMangaId,
         )
         assertEquals(
             1,
-            plan(MergeMode.MIRROR, listOf(a, b), strategy = MergeDedupeStrategy.NEWEST_UPLOAD).entries
+            plan(MergeMode.MIRROR, listOf(a, b), strategy = MergeDedupeStrategy.NEWEST_UPLOAD)
+                .entries
                 .single()
                 .primary
                 .sourceMangaId,
@@ -181,7 +184,8 @@ class ForkMergePlannerTest {
         assertEquals(
             "SWMERGED",
             String(
-                java.nio.ByteBuffer.allocate(8)
+                java.nio.ByteBuffer
+                    .allocate(8)
                     .putLong(ForkMergedSource.ID)
                     .array(),
                 Charsets.US_ASCII,

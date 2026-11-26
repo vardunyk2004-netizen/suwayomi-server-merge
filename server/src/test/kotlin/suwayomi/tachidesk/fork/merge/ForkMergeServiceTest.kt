@@ -122,10 +122,11 @@ class ForkMergeServiceTest : ApplicationTest() {
         service.updateOptions(result.groupId) { it.copy(excludedEntryKeys = it.excludedEntryKeys + "n:3") }
         assertEquals(before - 1, ForkTestFixtures.chaptersOf(result.mergedMangaId).size)
 
-        val journalId = suwayomi.tachidesk.fork.journal.ForkJournal
-            .recent(1)
-            .single()
-            .id
+        val journalId =
+            suwayomi.tachidesk.fork.journal.ForkJournal
+                .recent(1)
+                .single()
+                .id
         service.undoOptions(journalId)
         assertEquals(before, ForkTestFixtures.chaptersOf(result.mergedMangaId).size)
     }
