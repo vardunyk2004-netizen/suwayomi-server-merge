@@ -6,7 +6,7 @@ name: Fork CI
 
 on:
   push:
-    branches: [fork-work]
+    branches: [fork-work, 'fork/**']
   pull_request:
   workflow_dispatch:
     inputs:
