@@ -15,6 +15,7 @@ import suwayomi.tachidesk.fork.ForkMergePolicy
 import suwayomi.tachidesk.fork.database.ForkChapterFallbackTable
 import suwayomi.tachidesk.fork.database.ForkChapterLinkTable
 import suwayomi.tachidesk.fork.database.ForkChapterPartTable
+import suwayomi.tachidesk.fork.progress.PartMapping
 import suwayomi.tachidesk.fork.require
 import suwayomi.tachidesk.manga.impl.chapter.getChapterDownloadReady
 import suwayomi.tachidesk.manga.impl.util.source.GetSource
@@ -214,7 +215,7 @@ object ForkPageResolver {
         if (candidate.wholeChapter) {
             return Triple(candidate.sourceMangaId, candidate.ranges.single().sourceChapterId, index)
         }
-        val mapping = suwayomi.tachidesk.fork.progress.PartMapping(candidate.ranges)
+        val mapping = PartMapping(candidate.ranges)
         val sourcePage =
             mapping
                 .toSource(index)
