@@ -448,7 +448,7 @@ class ForkLifecycleExecutor(
                 .insertAndGetId {
                     it[ForkMergeGroupTable.mangaId] = group.mangaId
                     it[ForkMergeGroupTable.mode] = group.mode
-                    it[ForkMergeGroupTable.options] = ForkMergeRepository.encodeOptions(group.options)
+                    it[ForkMergeGroupTable.optionsJson] = ForkMergeRepository.encodeOptions(group.options)
                     it[ForkMergeGroupTable.coverSourceMangaId] = group.coverSourceMangaId
                     it[ForkMergeGroupTable.createdAt] = now
                     it[ForkMergeGroupTable.updatedAt] = now
