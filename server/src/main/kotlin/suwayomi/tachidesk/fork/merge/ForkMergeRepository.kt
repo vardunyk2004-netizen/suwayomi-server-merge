@@ -165,7 +165,7 @@ object ForkMergeRepository {
     ) {
         dbTransaction {
             ForkMergeGroupTable.update({ ForkMergeGroupTable.id eq groupId }) {
-                it[ForkMergeGroupTable.options] = encodeOptions(options)
+                it[ForkMergeGroupTable.optionsJson] = encodeOptions(options)
                 it[ForkMergeGroupTable.updatedAt] = ForkClock.now()
             }
         }
@@ -176,7 +176,7 @@ object ForkMergeRepository {
             id = row[ForkMergeGroupTable.id].value,
             mangaId = row[ForkMergeGroupTable.mangaId],
             mode = runCatching { MergeMode.valueOf(row[ForkMergeGroupTable.mode]) }.getOrDefault(MergeMode.MIRROR),
-            options = decodeOptions(row[ForkMergeGroupTable.options]),
+            options = decodeOptions(row[ForkMergeGroupTable.optionsJson]),
             coverSourceMangaId = row[ForkMergeGroupTable.coverSourceMangaId],
         )
 }

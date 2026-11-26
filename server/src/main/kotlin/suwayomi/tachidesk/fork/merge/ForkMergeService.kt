@@ -150,7 +150,7 @@ class ForkMergeService(
                     .insertAndGetId {
                         it[ForkMergeGroupTable.mangaId] = mergedMangaId
                         it[ForkMergeGroupTable.mode] = request.mode.name
-                        it[ForkMergeGroupTable.options] = ForkMergeRepository.encodeOptions(request.options)
+                        it[ForkMergeGroupTable.optionsJson] = ForkMergeRepository.encodeOptions(request.options)
                         it[ForkMergeGroupTable.coverSourceMangaId] = request.coverSourceMangaId
                         it[ForkMergeGroupTable.createdAt] = now
                         it[ForkMergeGroupTable.updatedAt] = now

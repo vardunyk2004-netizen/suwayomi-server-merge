@@ -13,7 +13,7 @@ import suwayomi.tachidesk.manga.model.table.columns.unlimitedVarchar
 object ForkMergeGroupTable : IntIdTable("fork_merge_group") {
     val mangaId = integer("manga_id")
     val mode = varchar("mode", 32)
-    val options = unlimitedVarchar("options").nullable()
+    val optionsJson = unlimitedVarchar("options").nullable()
     val coverSourceMangaId = integer("cover_source_manga_id").nullable()
     val createdAt = long("created_at")
     val updatedAt = long("updated_at")
