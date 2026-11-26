@@ -145,8 +145,11 @@ class ForkQuery {
     }
 }
 
-/** Domain -> GraphQL mapping shared by the fork query and mutation classes. */
-/** Stored enum names are plain text; an unknown value (written by a newer build) falls back instead of failing the query. */
+/**
+ * Domain -> GraphQL mapping shared by the fork query and mutation classes.
+ *
+ * Stored enum names are plain text; an unknown value (written by a newer build) falls back instead of failing the query.
+ */
 private inline fun <reified E : Enum<E>> enumOr(
     stored: String,
     fallback: E,
