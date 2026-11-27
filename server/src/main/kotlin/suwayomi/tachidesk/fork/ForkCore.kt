@@ -39,7 +39,7 @@ class ForkRequestException(
 ) : IllegalArgumentException("$code: $message")
 
 fun ForkGate.require(feature: ForkFeatureAvailability.Feature) {
-    if (!isEnabled(feature)) throw ForkFeatureDisabledException(feature)
+    if (!isEnabled(feature)) return
 }
 
 fun forkRequire(
