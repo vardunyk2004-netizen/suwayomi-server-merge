@@ -63,6 +63,7 @@ class ForkDuplicateScorerTest {
         val started = System.nanoTime()
         val pairs = ForkDuplicateScorer.candidatePairs(subjects, blockCap = 200)
         val elapsedMs = (System.nanoTime() - started) / 1_000_000
+        println("PERF synthetic_manga=5000 operation=duplicate_candidate_pairs candidates=${pairs.size} elapsed_ms=$elapsedMs")
         assertTrue(pairs.size < 5000L * 4999 / 2 / 10, "blocking must prune most pairs, got ${pairs.size}")
         assertTrue(elapsedMs < 30_000, "took $elapsedMs ms")
     }
