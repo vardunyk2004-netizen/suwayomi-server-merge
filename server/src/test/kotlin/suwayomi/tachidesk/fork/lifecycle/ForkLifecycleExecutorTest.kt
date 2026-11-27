@@ -11,8 +11,8 @@ import suwayomi.tachidesk.fork.ForkGate
 import suwayomi.tachidesk.fork.ForkLifecyclePolicy
 import suwayomi.tachidesk.fork.ForkRequestException
 import suwayomi.tachidesk.fork.ForkTestFixtures
-import suwayomi.tachidesk.fork.merge.ForkChapterPartService
 import suwayomi.tachidesk.fork.merge.CreateMergeRequest
+import suwayomi.tachidesk.fork.merge.ForkChapterPartService
 import suwayomi.tachidesk.fork.merge.ForkMergeService
 import suwayomi.tachidesk.fork.merge.MergeMode
 import suwayomi.tachidesk.fork.progress.ForkProgressService
