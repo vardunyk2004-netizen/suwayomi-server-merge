@@ -147,7 +147,7 @@ object ForkPageResolver {
                         }
                     listOfNotNull(primary) + fallbacks
                 }
-            }.ifEmpty { throw ForkResolutionException("SOURCE_MISSING", "No source chapter is available for this virtual chapter") }
+            }
         }
 
     /**
