@@ -227,13 +227,25 @@ class ForkLifecycleExecutorTest : ApplicationTest() {
     @Test
     fun `purge needs the nonce and the typed confirmation`() {
         val f = fixture()
+        val downloads = File(Injekt.get<ApplicationDirs>().downloadsRoot)
+        val sourceIdsBefore = sourceChapterIds(f)
         executor.apply(LifecycleActionRequest(LifecycleAction.SOFT_REMOVE, f.merged))
+        val beforePreview = captureStateSnapshot(downloads)
         val preview = executor.previewPurge(listOf(f.merged))
+        val afterPreview = captureStateSnapshot(downloads)
+        assertStateUnchangedExcept(beforePreview, afterPreview)
         assertEquals(0, preview.sourceRowsDeleted)
         assertEquals(0, preview.sourceFilesDeleted)
         assertEquals("CONFIRMATION_REQUIRED", assertFailsWith<ForkRequestException> { executor.confirmPurge(preview.nonce, "purge") }.code)
+        val afterRejectedConfirmation = captureStateSnapshot(downloads)
+        assertStateUnchangedExcept(afterPreview, afterRejectedConfirmation)
         val again = executor.previewPurge(listOf(f.merged))
+        val beforePurge = captureStateSnapshot(downloads)
         assertEquals(1, executor.confirmPurge(again.nonce, "PURGE"))
+        val afterPurge = captureStateSnapshot(downloads)
+        assertStateUnchangedExcept(beforePurge, afterPurge, "manga", "chapter")
+        assertEquals(sourceIdsBefore, sourceChapterIds(f), "confirmed purge must retain every source chapter row")
+        assertTrue(ForkTestFixtures.mangaRow(f.a) != null, "confirmed purge must retain source manga rows")
         assertEquals("NONCE_INVALID", assertFailsWith<ForkRequestException> { executor.confirmPurge(again.nonce, "PURGE") }.code)
     }
 }
