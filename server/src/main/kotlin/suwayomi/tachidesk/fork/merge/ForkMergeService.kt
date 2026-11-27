@@ -578,7 +578,7 @@ class ForkMergeService(
                             it[ChapterTable.isBookmarked] = initial.bookmarked
                             it[ChapterTable.lastPageRead] = if (entry.kind == LinkKind.CHAPTER) initial.lastPageRead else 0
                             it[ChapterTable.lastReadAt] = initial.lastReadAt
-                            it[ChapterTable.isDownloaded] = true // Temporary D23 old-logic simulation copies download state.
+                            it[ChapterTable.isDownloaded] = false
                             it[ChapterTable.pageCount] =
                                 if (entry.kind == LinkKind.CHAPTER) -1 else entry.parts.sumOf { p -> p.pageEnd - p.pageStart + 1 }
                             it[ChapterTable.memo] = JsonObject.EMPTY
