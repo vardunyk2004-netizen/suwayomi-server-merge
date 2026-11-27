@@ -102,9 +102,10 @@ class ForkChapterPartService(
                 parts = ranges,
                 hidesEntryKeys = links.map { it.entryKey },
             )
-        val result = merge.updateOptions(groupId!!) { options ->
-            options.copy(partDefinitions = options.partDefinitions.filterNot { it.key == definition.key } + definition)
-        }
+        val result =
+            merge.updateOptions(groupId!!) { options ->
+                options.copy(partDefinitions = options.partDefinitions.filterNot { it.key == definition.key } + definition)
+            }
         dbTransaction {
             val sourceChapterIds = links.mapNotNull { it.sourceChapterId }
             ChapterTable.deleteWhere { ChapterTable.id inList sourceChapterIds }
