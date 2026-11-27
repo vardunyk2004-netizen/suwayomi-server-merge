@@ -127,7 +127,12 @@ object ForkMergePlanner {
         options: MergeOptions,
         fallbacksEnabled: Boolean,
     ): List<PlanEntry> {
-        val all = sources.flatMap { it.chapters }
+        val all =
+            sources.flatMap { source ->
+                source.chapters.map { chapter ->
+                    chapter.copy(number = if (chapter.number >= 0f) chapter.number + source.offset else chapter.number)
+                }
+            }
         val groups = LinkedHashMap<String, MutableList<PlanChapter>>()
         all.forEach { chapter ->
             val key =
