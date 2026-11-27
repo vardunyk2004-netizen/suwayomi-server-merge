@@ -1,9 +1,9 @@
 package suwayomi.tachidesk.fork.maintenance
 
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import suwayomi.tachidesk.fork.ForkGate
@@ -15,12 +15,12 @@ import suwayomi.tachidesk.fork.lifecycle.LifecycleState
 import suwayomi.tachidesk.fork.merge.CreateMergeRequest
 import suwayomi.tachidesk.fork.merge.ForkMergeService
 import suwayomi.tachidesk.fork.merge.MergeMode
+import suwayomi.tachidesk.manga.impl.util.getChapterCbzPath
+import suwayomi.tachidesk.manga.impl.util.getMangaDownloadDir
 import suwayomi.tachidesk.manga.model.table.ChapterTable
 import suwayomi.tachidesk.server.ApplicationDirs
 import suwayomi.tachidesk.test.ApplicationTest
 import suwayomi.tachidesk.test.captureStateSnapshot
-import suwayomi.tachidesk.manga.impl.util.getChapterCbzPath
-import suwayomi.tachidesk.manga.impl.util.getMangaDownloadDir
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.File
@@ -85,7 +85,6 @@ class ForkDoctorServiceTest : ApplicationTest() {
         assertEquals(false, ForkTestFixtures.chapterRow(chapter)[ChapterTable.isDownloaded], "only the flag changes; no file is deleted")
     }
 
-
     @Test
     fun `D21 copy adoption and undo preserve the orphan file snapshot`() = runBlocking {
         val reindex = ForkReindexService(gate = ForkGate.allOn, queueBusy = { false })
@@ -119,11 +118,10 @@ class ForkDoctorServiceTest : ApplicationTest() {
             reindex.undoAdopt(journalId)
             assertTrue(orphan.isFile, "undo keeps the original file")
             assertFalse(adopted.exists(), "undo removes only the adopted copy")
-            assertContentEquals(beforeFiles, captureStateSnapshot(downloads).downloadFiles)
+            assertEquals(beforeFiles, captureStateSnapshot(downloads).downloadFiles)
             assertFalse(ForkTestFixtures.chapterRow(chapter)[ChapterTable.isDownloaded])
         } finally {
             mangaDir.deleteRecursively()
         }
     }
-
 }
