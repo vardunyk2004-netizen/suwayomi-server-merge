@@ -552,7 +552,7 @@ class ForkMergeService(
         val sourceProgress = loadSourceProgress(plan)
         var added = 0
         var updated = 0
-        plan.entries.asReversed().forEachIndexed { index, entry ->
+        plan.entries.forEachIndexed { index, entry ->
             val url = ForkMergePlanner.virtualChapterUrl(group.id, entry.entryKey)
             val name =
                 entry.nameOverride ?: when (display) {
