@@ -1,5 +1,6 @@
 package suwayomi.tachidesk.fork.lifecycle
 
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
@@ -10,6 +11,7 @@ import suwayomi.tachidesk.fork.ForkGate
 import suwayomi.tachidesk.fork.ForkLifecyclePolicy
 import suwayomi.tachidesk.fork.ForkRequestException
 import suwayomi.tachidesk.fork.ForkTestFixtures
+import suwayomi.tachidesk.fork.merge.ForkChapterPartService
 import suwayomi.tachidesk.fork.merge.CreateMergeRequest
 import suwayomi.tachidesk.fork.merge.ForkMergeService
 import suwayomi.tachidesk.fork.merge.MergeMode
@@ -32,6 +34,13 @@ import kotlin.test.assertTrue
 class ForkLifecycleExecutorTest : ApplicationTest() {
     private var policy = ForkLifecyclePolicy()
     private val merge = ForkMergeService(gate = ForkGate.allOn, policy = { ForkTestFixtures.allOnMergePolicy })
+    private val parts =
+        ForkChapterPartService(
+            gate = ForkGate.allOn,
+            policy = { ForkTestFixtures.allOnMergePolicy.copy(chapterLevelEnabled = true) },
+            merge = merge,
+            pageCountOf = { 10 },
+        )
     private val progress = ForkProgressService(gate = ForkGate.allOn, policy = { ForkTestFixtures.allOnProgressPolicy })
     private val executor =
         ForkLifecycleExecutor(
@@ -247,5 +256,47 @@ class ForkLifecycleExecutorTest : ApplicationTest() {
         assertEquals(sourceIdsBefore, sourceChapterIds(f), "confirmed purge must retain every source chapter row")
         assertTrue(ForkTestFixtures.mangaRow(f.a) != null, "confirmed purge must retain source manga rows")
         assertEquals("NONCE_INVALID", assertFailsWith<ForkRequestException> { executor.confirmPurge(again.nonce, "PURGE") }.code)
+    }
+
+    @Test
+    fun `merge split undo trash and purge preserve source download hashes`() {
+        val downloads = File(Injekt.get<ApplicationDirs>().downloadsRoot)
+        val matrixRoot = File(downloads, "fork-test/matrix-${System.nanoTime()}")
+        val sourceFile =
+            File(matrixRoot, "source/chapter/page.bin").apply {
+                parentFile.mkdirs()
+                writeBytes(byteArrayOf(3, 1, 4, 1, 5))
+            }
+        try {
+            val a = ForkTestFixtures.manga("Matrix A")
+            val b = ForkTestFixtures.manga("Matrix B")
+            ForkTestFixtures.chapter(a, 1f, 1, pageCount = 10)
+            ForkTestFixtures.chapter(b, 1f, 1, pageCount = 10)
+            val before = captureStateSnapshot(downloads).downloadFiles
+
+            val result = merge.create(CreateMergeRequest(listOf(a, b), MergeMode.MIRROR))
+            val afterMerge = captureStateSnapshot(downloads).downloadFiles
+            assertEquals(before, afterMerge, "merge changed download files")
+
+            val virtual = ForkTestFixtures.chaptersOf(result.mergedMangaId).single()[ChapterTable.id].value
+            runBlocking { parts.splitChapter(virtual, listOf(5)) }
+            assertEquals(before, captureStateSnapshot(downloads).downloadFiles, "split changed download files")
+
+            val unmerge = executor.apply(LifecycleActionRequest(LifecycleAction.UNMERGE, result.mergedMangaId))
+            assertEquals(before, captureStateSnapshot(downloads).downloadFiles, "unmerge changed download files")
+            executor.undo(unmerge.journalId)
+            assertEquals(before, captureStateSnapshot(downloads).downloadFiles, "undo changed download files")
+
+            executor.apply(LifecycleActionRequest(LifecycleAction.SOFT_REMOVE, result.mergedMangaId))
+            assertEquals(before, captureStateSnapshot(downloads).downloadFiles, "trash changed download files")
+            executor.restoreFromTrash(result.mergedMangaId)
+            executor.apply(LifecycleActionRequest(LifecycleAction.SOFT_REMOVE, result.mergedMangaId))
+            val purge = executor.previewPurge(listOf(result.mergedMangaId))
+            executor.confirmPurge(purge.nonce, "PURGE")
+            assertEquals(before, captureStateSnapshot(downloads).downloadFiles, "purge changed download files")
+            assertTrue(sourceFile.exists())
+        } finally {
+            matrixRoot.deleteRecursively()
+        }
     }
 }
