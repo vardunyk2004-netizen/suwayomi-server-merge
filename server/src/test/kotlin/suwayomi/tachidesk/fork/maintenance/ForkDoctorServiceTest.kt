@@ -88,42 +88,42 @@ class ForkDoctorServiceTest : ApplicationTest() {
     @Test
     fun `D21 copy adoption and undo preserve the orphan file snapshot`() =
         runBlocking {
-        val reindex = ForkReindexService(gate = ForkGate.allOn, queueBusy = { false })
-        val manga = ForkTestFixtures.manga("Reindex snapshot")
-        val chapter = ForkTestFixtures.chapter(manga, 1f, 1, name = "Chapter 1")
-        val mangaDir = File(getMangaDownloadDir(manga))
-        val orphan = File(mangaDir, "source-chapter-1.cbz")
-        val payload = byteArrayOf(4, 8, 15, 16, 23, 42)
-        mangaDir.mkdirs()
-        orphan.writeBytes(payload)
-        val downloads = File(Injekt.get<ApplicationDirs>().downloadsRoot)
-        val beforeFiles = captureStateSnapshot(downloads).downloadFiles
-
-        try {
-            val report = reindex.scan(listOf(manga))
-            val match = report.orphans.single()
-            assertEquals(ReindexMatch.EXACT, match.match)
-            assertEquals(listOf(chapter), match.chapterIds)
-
-            val journalId =
-                reindex
-                    .adopt(
-                        listOf(ReindexAdoption(chapter, match.path)),
-                        ReindexAdoptMode.COPY,
-                        dryRun = false,
-                    ).single()
-            val adopted = File(getChapterCbzPath(manga, chapter))
-            assertTrue(orphan.isFile, "copy mode keeps the reported source file")
-            assertContentEquals(payload, adopted.readBytes())
-            assertTrue(ForkTestFixtures.chapterRow(chapter)[ChapterTable.isDownloaded])
-
-            reindex.undoAdopt(journalId)
-            assertTrue(orphan.isFile, "undo keeps the original file")
-            assertFalse(adopted.exists(), "undo removes only the adopted copy")
-            assertEquals(beforeFiles, captureStateSnapshot(downloads).downloadFiles)
-            assertFalse(ForkTestFixtures.chapterRow(chapter)[ChapterTable.isDownloaded])
-        } finally {
-            mangaDir.deleteRecursively()
+            val reindex = ForkReindexService(gate = ForkGate.allOn, queueBusy = { false })
+            val manga = ForkTestFixtures.manga("Reindex snapshot")
+            val chapter = ForkTestFixtures.chapter(manga, 1f, 1, name = "Chapter 1")
+            val mangaDir = File(getMangaDownloadDir(manga))
+            val orphan = File(mangaDir, "source-chapter-1.cbz")
+            val payload = byteArrayOf(4, 8, 15, 16, 23, 42)
+            mangaDir.mkdirs()
+            orphan.writeBytes(payload)
+            val downloads = File(Injekt.get<ApplicationDirs>().downloadsRoot)
+            val beforeFiles = captureStateSnapshot(downloads).downloadFiles
+    
+            try {
+                val report = reindex.scan(listOf(manga))
+                val match = report.orphans.single()
+                assertEquals(ReindexMatch.EXACT, match.match)
+                assertEquals(listOf(chapter), match.chapterIds)
+    
+                val journalId =
+                    reindex
+                        .adopt(
+                            listOf(ReindexAdoption(chapter, match.path)),
+                            ReindexAdoptMode.COPY,
+                            dryRun = false,
+                        ).single()
+                val adopted = File(getChapterCbzPath(manga, chapter))
+                assertTrue(orphan.isFile, "copy mode keeps the reported source file")
+                assertContentEquals(payload, adopted.readBytes())
+                assertTrue(ForkTestFixtures.chapterRow(chapter)[ChapterTable.isDownloaded])
+    
+                reindex.undoAdopt(journalId)
+                assertTrue(orphan.isFile, "undo keeps the original file")
+                assertFalse(adopted.exists(), "undo removes only the adopted copy")
+                assertEquals(beforeFiles, captureStateSnapshot(downloads).downloadFiles)
+                assertFalse(ForkTestFixtures.chapterRow(chapter)[ChapterTable.isDownloaded])
+            } finally {
+                mangaDir.deleteRecursively()
+            }
         }
-    }
 }
