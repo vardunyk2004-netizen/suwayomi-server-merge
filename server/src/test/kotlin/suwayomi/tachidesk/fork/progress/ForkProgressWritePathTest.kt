@@ -35,6 +35,8 @@ import suwayomi.tachidesk.manga.model.table.MangaTable
 import suwayomi.tachidesk.server.JavalinSetup.Attribute
 import suwayomi.tachidesk.server.user.UserType
 import suwayomi.tachidesk.test.ApplicationTest
+import java.util.concurrent.CompletableFuture
+import java.util.function.Supplier
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -90,6 +92,10 @@ class ForkProgressWritePathTest : ApplicationTest() {
         every { context.pathParam("mangaId") } returns fixture.sourceMangaId.toString()
         every { context.pathParam("chapterIndex") } returns "0"
         every { context.attribute<UserType>(Attribute.TachideskUser.name) } returns UserType.Admin(1)
+        every { context.future(any<Supplier<CompletableFuture<*>>>()) } answers {
+            firstArg<Supplier<CompletableFuture<*>>>().get().join()
+            Unit
+        }
 
         MangaController.chapterRetrieve.handle(context)
 
