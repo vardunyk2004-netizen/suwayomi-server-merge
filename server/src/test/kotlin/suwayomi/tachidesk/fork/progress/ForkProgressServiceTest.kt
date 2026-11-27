@@ -10,6 +10,7 @@ import suwayomi.tachidesk.fork.ForkTestFixtures
 import suwayomi.tachidesk.fork.merge.CreateMergeRequest
 import suwayomi.tachidesk.fork.merge.ForkMergeService
 import suwayomi.tachidesk.fork.merge.MergeMode
+import suwayomi.tachidesk.graphql.mutations.ChapterMutation
 import suwayomi.tachidesk.graphql.types.ProgressDirection
 import suwayomi.tachidesk.manga.impl.Chapter
 import suwayomi.tachidesk.manga.model.table.ChapterTable
@@ -89,6 +90,36 @@ class ForkProgressServiceTest : ApplicationTest() {
         val index = ForkTestFixtures.chapterRow(virtual)[ChapterTable.sourceOrder]
         Chapter.modifyChapter(merged, index, isRead = true, isBookmarked = null, markPrevRead = null, lastPageRead = null)
         assertTrue(ForkTestFixtures.chapterRow(source)[ChapterTable.isRead])
+    }
+
+    @Test
+    fun `D17 single and batch GraphQL chapter mutations propagate bookmarks`() {
+        val (_, virtual, source) = merged()
+        val mutation = ChapterMutation()
+
+        mutation.updateChapter(
+            ChapterMutation.UpdateChapterInput(
+                id = virtual,
+                patch = ChapterMutation.UpdateChapterPatch(isBookmarked = true),
+            ),
+        )
+        assertTrue(ForkTestFixtures.chapterRow(source)[ChapterTable.isBookmarked])
+
+        transaction {
+            ChapterTable.update({ ChapterTable.id eq virtual }) {
+                it[ChapterTable.isBookmarked] = false
+            }
+            ChapterTable.update({ ChapterTable.id eq source }) {
+                it[ChapterTable.isBookmarked] = false
+            }
+        }
+        mutation.updateChapters(
+            ChapterMutation.UpdateChaptersInput(
+                ids = listOf(virtual),
+                patch = ChapterMutation.UpdateChapterPatch(isBookmarked = true),
+            ),
+        )
+        assertTrue(ForkTestFixtures.chapterRow(source)[ChapterTable.isBookmarked])
     }
 
     @Test
