@@ -196,18 +196,29 @@ class ForkLifecycleExecutorTest : ApplicationTest() {
     @Test
     fun `D22 trash lists restores and retention purges`() {
         val f = fixture()
+        val downloads = File(Injekt.get<ApplicationDirs>().downloadsRoot)
+        val sourceIdsBefore = sourceChapterIds(f)
+        val beforeRemove = captureStateSnapshot(downloads)
         ForkClock.nowSeconds = { 1_000_000 }
         executor.apply(LifecycleActionRequest(LifecycleAction.SOFT_REMOVE, f.merged, reason = "test"))
+        val afterRemove = captureStateSnapshot(downloads)
+        assertStateUnchangedExcept(beforeRemove, afterRemove)
         val item = executor.trash().single()
         assertEquals(f.merged, item.mangaId)
         assertEquals(1_000_000 + 30 * 86_400L, item.purgeAfter)
 
         executor.restoreFromTrash(f.merged)
+        val afterRestore = captureStateSnapshot(downloads)
+        assertStateUnchangedExcept(afterRemove, afterRestore)
         assertTrue(executor.trash().isEmpty())
 
         executor.apply(LifecycleActionRequest(LifecycleAction.SOFT_REMOVE, f.merged))
         ForkClock.nowSeconds = { 1_000_000 + 31 * 86_400L }
+        val beforePurge = captureStateSnapshot(downloads)
         assertEquals(1, executor.purgeExpired())
+        val afterPurge = captureStateSnapshot(downloads)
+        assertStateUnchangedExcept(beforePurge, afterPurge, "manga", "chapter")
+        assertEquals(sourceIdsBefore, sourceChapterIds(f), "purge must preserve source chapter rows")
         assertNull(ForkTestFixtures.mangaRow(f.merged), "merged row purged")
         assertEquals(LifecycleState.ACTIVE, ForkLifecycleStore.stateOf(f.a), "sources are released, never stuck hidden")
         assertTrue(ForkTestFixtures.mangaRow(f.a)!![MangaTable.inLibrary], "source rows untouched")
