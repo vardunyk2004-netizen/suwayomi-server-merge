@@ -51,10 +51,15 @@ class ForkDuplicateScorerTest {
     }
 
     @Test
-    fun `D19 scoring is deterministic and symmetric`() {
+    fun `D19 server scoring result is pinned and symmetric`() {
         val a = subject(1, "One Piece")
         val b = subject(2, "One-Piece")
-        assertEquals(ForkDuplicateScorer.score(a, b, DuplicateWeights()), ForkDuplicateScorer.score(b, a, DuplicateWeights()))
+        val score = ForkDuplicateScorer.score(a, b, DuplicateWeights())
+
+        assertEquals(100, score.score)
+        assertEquals(listOf("title", "coreTitle", "token", "alias", "url", "chapter"), score.breakdown.map { it.signal })
+        assertTrue(score.strong)
+        assertEquals(score, ForkDuplicateScorer.score(b, a, DuplicateWeights()))
     }
 
     @Test
