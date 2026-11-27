@@ -452,7 +452,12 @@ class ForkMergeService(
 
     /** D10: a merged manga is never a source, and a manga is in at most one merge. */
     private fun validateSourceCandidate(sourceMangaId: Int) {
-        // Temporary D10 old-logic simulation: there is no nested-merge or duplicate-membership guard.
+        forkRequire(!ForkMergeRepository.isMergedManga(sourceMangaId), "NESTED_MERGE") {
+            "A merged manga cannot be a source of another merge"
+        }
+        forkRequire(ForkMergeRepository.groupIdOfSource(sourceMangaId) == null, "ALREADY_MERGED") {
+            "Manga $sourceMangaId is already in a merge"
+        }
     }
 
     private fun planFor(
