@@ -205,7 +205,11 @@ class ForkProgressWritePathTest : ApplicationTest() {
     private class FakeProgressSource(
         id: Long,
     ) : StubSource(id) {
-        override suspend fun getPageList(chapter: SChapter): List<Page> =
-            listOf(Page(0, "fixture-page-0"), Page(1, "fixture-page-1"))
+        override suspend fun getPageList(chapter: SChapter): List<Page> {
+            return listOf(
+                Page(0, "fixture-page-0"),
+                Page(1, "fixture-page-1"),
+            )
+        }
     }
 }
