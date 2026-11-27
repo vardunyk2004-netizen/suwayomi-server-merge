@@ -9,12 +9,12 @@ import org.junit.jupiter.api.BeforeEach
 import suwayomi.tachidesk.fork.ForkGate
 import suwayomi.tachidesk.fork.ForkRequestException
 import suwayomi.tachidesk.fork.ForkTestFixtures
-import suwayomi.tachidesk.graphql.types.ReindexAdoptMode
 import suwayomi.tachidesk.fork.lifecycle.ForkLifecycleStore
 import suwayomi.tachidesk.fork.lifecycle.LifecycleState
 import suwayomi.tachidesk.fork.merge.CreateMergeRequest
 import suwayomi.tachidesk.fork.merge.ForkMergeService
 import suwayomi.tachidesk.fork.merge.MergeMode
+import suwayomi.tachidesk.graphql.types.ReindexAdoptMode
 import suwayomi.tachidesk.manga.impl.util.getChapterCbzPath
 import suwayomi.tachidesk.manga.impl.util.getMangaDownloadDir
 import suwayomi.tachidesk.manga.model.table.ChapterTable
@@ -86,7 +86,8 @@ class ForkDoctorServiceTest : ApplicationTest() {
     }
 
     @Test
-    fun `D21 copy adoption and undo preserve the orphan file snapshot`() = runBlocking {
+    fun `D21 copy adoption and undo preserve the orphan file snapshot`() =
+        runBlocking {
         val reindex = ForkReindexService(gate = ForkGate.allOn, queueBusy = { false })
         val manga = ForkTestFixtures.manga("Reindex snapshot")
         val chapter = ForkTestFixtures.chapter(manga, 1f, 1, name = "Chapter 1")
@@ -105,11 +106,12 @@ class ForkDoctorServiceTest : ApplicationTest() {
             assertEquals(listOf(chapter), match.chapterIds)
 
             val journalId =
-                reindex.adopt(
-                    listOf(ReindexAdoption(chapter, match.path)),
-                    ReindexAdoptMode.COPY,
-                    dryRun = false,
-                ).single()
+                reindex
+                    .adopt(
+                        listOf(ReindexAdoption(chapter, match.path)),
+                        ReindexAdoptMode.COPY,
+                        dryRun = false,
+                    ).single()
             val adopted = File(getChapterCbzPath(manga, chapter))
             assertTrue(orphan.isFile, "copy mode keeps the reported source file")
             assertContentEquals(payload, adopted.readBytes())
