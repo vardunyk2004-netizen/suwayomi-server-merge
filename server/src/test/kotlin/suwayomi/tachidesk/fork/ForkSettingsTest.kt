@@ -14,6 +14,7 @@ import suwayomi.tachidesk.graphql.types.ProgressBookmarkPolicy
 import suwayomi.tachidesk.graphql.types.ProgressConflictPolicy
 import suwayomi.tachidesk.graphql.types.ProgressDirection
 import suwayomi.tachidesk.graphql.types.ReindexAdoptMode
+import suwayomi.tachidesk.graphql.types.Settings
 import suwayomi.tachidesk.manga.impl.backup.BackupFlags
 import suwayomi.tachidesk.manga.impl.backup.proto.handlers.BackupSettingsHandler
 import suwayomi.tachidesk.server.database.dbTransaction
@@ -283,6 +284,19 @@ class ForkSettingsTest : ApplicationTest() {
             null,
             BackupSettingsHandler.backup(BackupFlags.DEFAULT.copy(includeServerSettings = false)),
         )
+    }
+
+    @Test
+    fun `settings restore forwards changed backup values without mutating global config`() {
+        val backup = requireNotNull(BackupSettingsHandler.backup(BackupFlags.DEFAULT))
+        val changedBackup = backup.copy(mergeEnabled = true, reindexDefaultDryRun = false)
+        var restoredSettings: Settings? = null
+
+        BackupSettingsHandler.restore(changedBackup) { restoredSettings = it }
+
+        val restored = requireNotNull(restoredSettings)
+        assertEquals(true, restored.asMap()["mergeEnabled"])
+        assertEquals(false, restored.asMap()["reindexDefaultDryRun"])
     }
 
     @Test
