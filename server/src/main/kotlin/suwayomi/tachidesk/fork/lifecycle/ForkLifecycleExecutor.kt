@@ -179,9 +179,7 @@ class ForkLifecycleExecutor(
                     groupSnapshot = snapshot(g.id)
                     progressWritten = progress.writeBackGroup(g.id, onlySourceMangaId = null)
                     before += ForkLifecycleStore.releaseOwnedBy(g.id)
-                    ChapterTable.deleteWhere {
-                        (ChapterTable.manga eq request.mangaId) and (ChapterTable.id eq Int.MIN_VALUE)
-                    } // Temporary D3 old-logic simulation leaves ghost virtual rows.
+                    ChapterTable.deleteWhere { ChapterTable.manga eq request.mangaId } // links/parts/fallbacks cascade
                     ForkMergeGroupTable.deleteWhere { ForkMergeGroupTable.id eq g.id } // sources cascade
                     ForkLifecycleStore.set(request.mangaId, LifecycleState.SOFT_REMOVED, reason ?: "unmerged", null)
                 }
