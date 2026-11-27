@@ -115,7 +115,6 @@ class ChapterMutation {
             }
         }
 
-
         // Sync with KoreaderSync when progress is updated
         if (patch.lastPageRead != null || patch.isRead == true) {
             GlobalScope.launch {
