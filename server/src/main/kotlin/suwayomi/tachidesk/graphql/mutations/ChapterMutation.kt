@@ -115,6 +115,11 @@ class ChapterMutation {
             }
         }
 
+        // Fork R2 chokepoint (no SQL unless merge progress sync is active).
+        if (patch.isRead != null || patch.isBookmarked != null || patch.lastPageRead != null) {
+            ForkProgressService.default.afterWrite(ids)
+        }
+
         // Sync with KoreaderSync when progress is updated
         if (patch.lastPageRead != null || patch.isRead == true) {
             GlobalScope.launch {
