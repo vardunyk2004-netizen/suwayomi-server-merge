@@ -62,7 +62,7 @@ class ForkChapterPartService(
                     name = "${link.originalName} (${i + 1}/${ranges.size})",
                     number = link.originalNumber,
                     parts = listOf(PartRange(sourceChapterId, start, end, pageCount)),
-                    hidesEntryKeys = if (i == 0) listOf(link.entryKey) else emptyList(),
+                    hidesEntryKeys = emptyList(), // Temporary D7 old-logic simulation leaves the original visible.
                 )
             }
         return merge.updateOptions(group.id) { options ->
