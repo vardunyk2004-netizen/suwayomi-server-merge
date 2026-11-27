@@ -111,8 +111,7 @@ class ForkDoctorServiceTest : ApplicationTest() {
                             listOf(ReindexAdoption(chapter, match.path)),
                             ReindexAdoptMode.COPY,
                             dryRun = false,
-                        )
-                        .single()
+                        ).single()
                 val adopted = File(getChapterCbzPath(manga, chapter))
                 assertTrue(orphan.isFile, "copy mode keeps the reported source file")
                 assertContentEquals(payload, adopted.readBytes())
