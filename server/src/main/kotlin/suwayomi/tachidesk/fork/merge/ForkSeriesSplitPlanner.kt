@@ -33,6 +33,7 @@ object ForkSeriesSplitPlanner {
         otherViewChapterIds: Set<Int> = existingViewChapterIds(sourceMangaId),
     ) {
         forkRequire(chapterIds.isNotEmpty(), "EMPTY_SPLIT") { "A split view needs at least one chapter" }
+        forkRequire(chapterIds.distinct().size == chapterIds.size, "DUPLICATE_CHAPTER") { "A chapter can appear only once" }
         val owners = ForkMergeRepository.chaptersOfIds(chapterIds)
         forkRequire(owners.size == chapterIds.size && owners.values.all { it == sourceMangaId }, "FOREIGN_CHAPTER") {
             "Every chapter must belong to manga $sourceMangaId"
