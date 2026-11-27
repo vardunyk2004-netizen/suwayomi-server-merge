@@ -34,6 +34,19 @@ class ForkSettingsTest : ApplicationTest() {
         assertFalse(serverConfig.duplicatesEnabled.value)
         assertFalse(serverConfig.reindexEnabled.value)
         assertFalse(serverConfig.doctorEnabled.value)
+
+        val forkMasterSettings =
+            listOf(
+                "forkStockMode",
+                "mergeEnabled",
+                "duplicatesEnabled",
+                "reindexEnabled",
+                "doctorEnabled",
+            )
+        forkMasterSettings.forEach { name ->
+            assertEquals(false, SettingsRegistry.get(name)?.defaultValue, "$name must default to false")
+        }
+
         ForkFeatureAvailability.Feature.entries.forEach { feature ->
             assertFalse(ForkFeatureAvailability.isEnabled(feature))
         }
