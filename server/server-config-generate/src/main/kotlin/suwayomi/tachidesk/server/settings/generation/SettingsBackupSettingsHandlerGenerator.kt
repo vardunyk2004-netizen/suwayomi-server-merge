@@ -34,6 +34,7 @@ object SettingsBackupSettingsHandlerGenerator {
         appendLine(
             KotlinFileGeneratorHelper.createImports(
                 listOf(
+                    "suwayomi.tachidesk.graphql.types.Settings",
                     "suwayomi.tachidesk.server.settings.SettingsUpdater",
                     "suwayomi.tachidesk.manga.impl.backup.BackupFlags",
                     "suwayomi.tachidesk.manga.impl.backup.proto.models.BackupServerSettings",
@@ -73,10 +74,13 @@ object SettingsBackupSettingsHandlerGenerator {
         val indentation = 4
         val contentIndentation = indentation * 2
 
-        appendLine("fun restore(backupServerSettings: BackupServerSettings?) {".addIndentation(indentation))
+        val restoreSignature =
+            "fun restore(backupServerSettings: BackupServerSettings?, " +
+                "updateSettings: (Settings) -> Unit = { SettingsUpdater.updateAll(it) }) {"
+        appendLine(restoreSignature.addIndentation(indentation))
         appendLine("if (backupServerSettings == null) { return }".addIndentation(contentIndentation))
         appendLine()
-        appendLine("SettingsUpdater.updateAll(".addIndentation(contentIndentation))
+        appendLine("updateSettings(".addIndentation(contentIndentation))
         appendLine("backupServerSettings.copy(".addIndentation(indentation * 3))
 
         val deprecatedSettings = settings.filter { it.typeInfo.restoreLegacy != null }
