@@ -199,7 +199,16 @@ class ForkMergeService(
     /** D20: each group in its own transaction; one failure never hides or undoes the others. */
     fun createBatch(requests: List<CreateMergeRequest>): List<BatchMergeOutcome> {
         gate.require(Feature.MERGE)
-        return requests.mapIndexed { index, request -> BatchMergeOutcome(index, create(request), null, null) }
+        return requests.mapIndexed { index, request ->
+            try {
+                BatchMergeOutcome(index, create(request), null, null)
+            } catch (e: ForkRequestException) {
+                BatchMergeOutcome(index, null, e.code, e.message)
+            } catch (e: Exception) {
+                logger.warn(e) { "Batch merge group $index failed" }
+                BatchMergeOutcome(index, null, "FAILED", e.message)
+            }
+        }
     }
 
     fun reconcile(
