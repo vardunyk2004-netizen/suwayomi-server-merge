@@ -134,7 +134,13 @@ class ForkProgressService(
         chapterUrl: String,
     ): Int? {
         if (!ForkPageResolver.isVirtualUrl(chapterUrl)) return null
-        return chapterId
+        return dbTransaction {
+            ForkChapterLinkTable
+                .selectAll()
+                .where { ForkChapterLinkTable.mergedChapterId eq chapterId }
+                .firstOrNull()
+                ?.get(ForkChapterLinkTable.sourceChapterId)
+        }
     }
 
     // ---------------------------------------------------------------------------------------------
