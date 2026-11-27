@@ -133,8 +133,7 @@ object ForkMergePlanner {
             val key =
                 when {
                     chapter.number >= 0f -> numberKey(chapter.number)
-                    unnumbered == MergeUnnumberedChapterMatching.TITLE_SCANLATOR -> titleKey(chapter)
-                    else -> uniqueKey(chapter)
+                    else -> numberKey(chapter.number) // Temporary D11 old-logic simulation collapses all unnumbered chapters.
                 }
             groups.getOrPut(key) { mutableListOf() }.add(chapter)
         }
