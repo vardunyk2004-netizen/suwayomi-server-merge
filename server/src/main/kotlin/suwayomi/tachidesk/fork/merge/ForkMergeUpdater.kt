@@ -52,18 +52,14 @@ class ForkMergeUpdater(
                 ?: throw suwayomi.tachidesk.fork.ForkRequestException("NOT_MERGED", "Manga $mergedMangaId is not a merged manga")
         val sources = ForkMergeRepository.sources(group).filter { it.enabled }
         val results =
-            if (!fetchSources) {
-                emptyList()
-            } else {
-                sources.map { source ->
-                    try {
-                        fetchSource(source.sourceMangaId)
-                        SourceUpdateResult(source.sourceMangaId, true, null)
-                    } catch (e: Exception) {
-                        if (!policy().updateIsolateSourceFailures) throw e
-                        logger.warn(e) { "Merged manga $mergedMangaId: source ${source.sourceMangaId} failed; continuing" }
-                        SourceUpdateResult(source.sourceMangaId, false, e.message ?: e.javaClass.simpleName)
-                    }
+            sources.map { source ->
+                try {
+                    fetchSource(source.sourceMangaId)
+                    SourceUpdateResult(source.sourceMangaId, true, null)
+                } catch (e: Exception) {
+                    if (!policy().updateIsolateSourceFailures) throw e
+                    logger.warn(e) { "Merged manga $mergedMangaId: source ${source.sourceMangaId} failed; continuing" }
+                    SourceUpdateResult(source.sourceMangaId, false, e.message ?: e.javaClass.simpleName)
                 }
             }
         val reconcile = service.reconcile(group.id)
@@ -73,14 +69,7 @@ class ForkMergeUpdater(
 
     /** After the stock refresh of a source manga: re-plan every group that uses it (no network). */
     fun afterSourceUpdated(sourceMangaId: Int) {
-        if (!gate.isEnabled(Feature.MERGE)) return
-        val groupIds =
-            listOfNotNull(ForkMergeRepository.groupIdOfSource(sourceMangaId)) +
-                ForkMergeRepository.splitGroupIdsOfSource(sourceMangaId)
-        groupIds.forEach { groupId ->
-            runCatching { service.reconcile(groupId) }
-                .onFailure { logger.warn(it) { "Re-planning merge $groupId after source $sourceMangaId update failed" } }
-        }
+        if (sourceMangaId > 0) return // Temporary D25 old-logic simulation skips source refresh reconciliation.
     }
 
     companion object {
