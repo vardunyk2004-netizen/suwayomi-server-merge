@@ -61,6 +61,7 @@ class ForkLifecycleExecutorTest : ApplicationTest() {
         val merged: Int,
         val groupId: Int,
         val aChapter: Int,
+        val cChapter: Int,
     )
 
     private fun fixture(): Fixture {
@@ -69,10 +70,28 @@ class ForkLifecycleExecutorTest : ApplicationTest() {
         val c = ForkTestFixtures.manga("Src C")
         val aChapter = ForkTestFixtures.chapter(a, 1f, 1, pageCount = 10)
         ForkTestFixtures.chapter(b, 1f, 1, pageCount = 10)
-        ForkTestFixtures.chapter(c, 2f, 1, pageCount = 10)
+        val cChapter = ForkTestFixtures.chapter(c, 2f, 1, pageCount = 10)
         val result = merge.create(CreateMergeRequest(listOf(a, b, c), MergeMode.MIRROR))
-        return Fixture(a, b, c, result.mergedMangaId, result.groupId, aChapter)
+        return Fixture(a, b, c, result.mergedMangaId, result.groupId, aChapter, cChapter)
     }
+
+    private fun assertStateUnchangedExcept(
+        before: suwayomi.tachidesk.test.StateSnapshot,
+        after: suwayomi.tachidesk.test.StateSnapshot,
+        vararg changedTables: String,
+    ) {
+        val changed = changedTables.toSet()
+        val beforeDatabase = before.database.filterKeys { !it.startsWith("fork_") && it !in changed }
+        val afterDatabase = after.database.filterKeys { !it.startsWith("fork_") && it !in changed }
+        assertEquals(beforeDatabase, afterDatabase, "unrelated upstream database state changed")
+        assertEquals(before.downloadFiles, after.downloadFiles, "download files changed")
+    }
+
+    private fun sourceChapterIds(f: Fixture): Set<Int> =
+        listOf(f.a, f.b, f.c)
+            .flatMap(ForkTestFixtures::chaptersOf)
+            .map { it[ChapterTable.id].value }
+            .toSet()
 
     @Test
     fun `D3 unmerge removes virtual rows and keeps source progress`() {
@@ -85,9 +104,15 @@ class ForkLifecycleExecutorTest : ApplicationTest() {
                 it[ChapterTable.lastReadAt] = 5_000
             }
         }
+        val downloads = File(Injekt.get<ApplicationDirs>().downloadsRoot)
+        val sourceIdsBefore = sourceChapterIds(f)
+        val before = captureStateSnapshot(downloads)
         val outcome = executor.apply(LifecycleActionRequest(LifecycleAction.UNMERGE, f.merged))
+        val after = captureStateSnapshot(downloads)
 
         assertTrue(ForkTestFixtures.chaptersOf(f.merged).isEmpty(), "no ghost virtual rows (D3)")
+        assertStateUnchangedExcept(before, after, "chapter")
+        assertEquals(sourceIdsBefore, sourceChapterIds(f), "unmerge must keep every source chapter row")
         assertTrue(ForkTestFixtures.chapterRow(f.aChapter)[ChapterTable.isRead], "progress written back")
         assertEquals(LifecycleState.ACTIVE, ForkLifecycleStore.stateOf(f.a))
         assertEquals(LifecycleState.SOFT_REMOVED, ForkLifecycleStore.stateOf(f.merged))
@@ -101,8 +126,24 @@ class ForkLifecycleExecutorTest : ApplicationTest() {
     @Test
     fun `D4 removing a source makes it visible and keeps the minimum`() {
         val f = fixture()
+        val cVirtual = ForkTestFixtures.chaptersOf(f.merged).single { it[ChapterTable.chapter_number] == 2f }[ChapterTable.id].value
+        transaction {
+            ChapterTable.update({ ChapterTable.id eq cVirtual }) {
+                it[ChapterTable.isRead] = true
+                it[ChapterTable.lastPageRead] = 7
+                it[ChapterTable.lastReadAt] = 6_000
+            }
+        }
+        val downloads = File(Injekt.get<ApplicationDirs>().downloadsRoot)
+        val sourceIdsBefore = sourceChapterIds(f)
+        val before = captureStateSnapshot(downloads)
         executor.apply(LifecycleActionRequest(LifecycleAction.REMOVE_SOURCE_FROM_MERGE, f.merged, sourceMangaId = f.c))
+        val after = captureStateSnapshot(downloads)
+
         assertEquals(LifecycleState.ACTIVE, ForkLifecycleStore.stateOf(f.c))
+        assertStateUnchangedExcept(before, after, "chapter")
+        assertEquals(sourceIdsBefore, sourceChapterIds(f), "removing a source must keep every source chapter row")
+        assertTrue(ForkTestFixtures.chapterRow(f.cChapter)[ChapterTable.isRead], "source progress is written back")
         // Two sources left: the planner refuses before anything is written.
         assertFailsWith<IllegalArgumentException> {
             executor.apply(LifecycleActionRequest(LifecycleAction.REMOVE_SOURCE_FROM_MERGE, f.merged, sourceMangaId = f.b))
@@ -117,7 +158,12 @@ class ForkLifecycleExecutorTest : ApplicationTest() {
         transaction {
             MangaTable.update({ MangaTable.id eq f.a }) { it[MangaTable.inLibrary] = false }
         }
+        val downloads = File(Injekt.get<ApplicationDirs>().downloadsRoot)
+        val before = captureStateSnapshot(downloads)
         executor.apply(LifecycleActionRequest(LifecycleAction.REMOVE_MERGED, f.merged))
+        val after = captureStateSnapshot(downloads)
+
+        assertStateUnchangedExcept(before, after)
         assertEquals(false, ForkTestFixtures.mangaRow(f.a)!![MangaTable.inLibrary])
         assertEquals(LifecycleState.HIDDEN_BY_MERGE, ForkLifecycleStore.stateOf(f.b), "restoreSources defaults to false (setting 1032)")
     }
