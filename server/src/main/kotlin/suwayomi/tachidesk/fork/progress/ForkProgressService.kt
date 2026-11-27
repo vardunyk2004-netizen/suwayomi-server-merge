@@ -54,7 +54,23 @@ class ForkProgressService(
     )
 
     fun afterWrite(chapterIds: Collection<Int>) {
-        if (chapterIds.isNotEmpty()) return // Temporary D17 old-logic simulation: write paths bypass propagation.
+        if (chapterIds.isEmpty() || !isActive() || inPropagation.get()) return
+        inPropagation.set(true)
+        try {
+            dbTransaction { propagate(chapterIds.distinct()) }
+        } catch (e: Exception) {
+            logger.warn(e) { "Progress propagation failed for $chapterIds" }
+            runCatching {
+                ForkJournal.record(
+                    ForkOperation.PROGRESS_DIAGNOSTIC,
+                    "{\"chapterIds\":${chapterIds.toList()}}",
+                    reversible = false,
+                    state = ForkJournalState.FAILED,
+                )
+            }
+        } finally {
+            inPropagation.set(false)
+        }
     }
 
     /** `Chapter.modifyChapter(markPrevRead=...)` changed every chapter before [chapterIndex] of [mangaId]. */
