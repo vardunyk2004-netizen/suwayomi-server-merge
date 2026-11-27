@@ -4,6 +4,7 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.neq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import suwayomi.tachidesk.fork.ForkFeatureAvailability.Feature
@@ -101,9 +102,14 @@ class ForkChapterPartService(
                 parts = ranges,
                 hidesEntryKeys = links.map { it.entryKey },
             )
-        return merge.updateOptions(groupId!!) { options ->
+        val result = merge.updateOptions(groupId!!) { options ->
             options.copy(partDefinitions = options.partDefinitions.filterNot { it.key == definition.key } + definition)
         }
+        dbTransaction {
+            val sourceChapterIds = links.mapNotNull { it.sourceChapterId }
+            ChapterTable.deleteWhere { ChapterTable.id inList sourceChapterIds }
+        }
+        return result
     }
 
     /** Removes a part definition; the hidden original chapters re-appear (undo of split/merge). */
