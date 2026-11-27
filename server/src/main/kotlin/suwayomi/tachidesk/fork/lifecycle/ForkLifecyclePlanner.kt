@@ -21,7 +21,7 @@ object ForkLifecyclePlanner {
                 }
 
                 LifecycleAction.SOFT_REMOVE -> {
-                    request.sourceMangaIds.distinct()
+                    if (request.restoreSources) request.sourceMangaIdsEligibleForRestore.distinct() else emptyList()
                 }
 
                 LifecycleAction.REMOVE_MERGED,
@@ -55,12 +55,7 @@ object ForkLifecyclePlanner {
             virtualChapterIdsToRemove = virtualChaptersToRemove,
             sourceMangaIdsToRestore = sourceToRestore,
             sourceMangaIdsToRemove = emptyList(),
-            sourceDownloadIdsToDelete =
-                if (request.action == LifecycleAction.REMOVE_MERGED && request.deleteMaterializedDownloads) {
-                    request.sourceDownloadIds.distinct()
-                } else {
-                    emptyList()
-                },
+            sourceDownloadIdsToDelete = emptyList(),
             materializedDownloadIdsToDelete =
                 if (request.action == LifecycleAction.REMOVE_MERGED && request.deleteMaterializedDownloads) {
                     request.materializedDownloadIds.distinct()
@@ -68,13 +63,14 @@ object ForkLifecyclePlanner {
                     emptyList()
                 },
             requiresProgressWriteBack = request.action == LifecycleAction.UNMERGE,
-            journal = LifecycleJournal(request.action, reversible = request.action != LifecycleAction.SOFT_REMOVE),
+            journal = LifecycleJournal(request.action),
         )
     }
 
     private fun requireSourceToRemove(request: LifecycleRequest): Int {
         val sourceMangaId = requireNotNull(request.sourceMangaIdToRemove) { "Removing a source requires its manga ID" }
         require(sourceMangaId in request.sourceMangaIds) { "The source must belong to the merge" }
+        require(request.sourceMangaIds.size > 2) { "A merge must retain at least two sources" }
         return sourceMangaId
     }
 }
