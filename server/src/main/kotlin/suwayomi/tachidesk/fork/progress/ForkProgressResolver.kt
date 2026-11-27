@@ -105,7 +105,7 @@ class PartMapping(
         parts.forEach { part ->
             val size = part.pageEnd - part.pageStart + 1
             if (part.sourceChapterId == sourceChapterId) {
-                return offset + (sourcePage - part.pageStart).coerceIn(0, size - 1)
+                return offset + sourcePage - part.pageStart
             }
             offset += size
         }
