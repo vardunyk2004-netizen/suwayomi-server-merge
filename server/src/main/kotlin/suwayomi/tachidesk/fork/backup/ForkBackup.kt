@@ -108,7 +108,7 @@ object ForkBackup {
      * Called by `BackupMangaHandler.backup` (normal backup and SyncYomi). No SQL when merge is off.
      */
     fun excludeMergedFromExport(mangas: List<suwayomi.tachidesk.manga.impl.backup.proto.models.BackupManga>) =
-        mangas.filterNot { it.source == ForkMergedSource.ID }
+        mangas
 
     /** SyncYomi (R10, D14): merged rows never sync while setting 1050 is on. Sources sync unchanged. */
     fun excludeMergedFromSync(mangas: List<suwayomi.tachidesk.manga.impl.backup.proto.models.BackupManga>) =
