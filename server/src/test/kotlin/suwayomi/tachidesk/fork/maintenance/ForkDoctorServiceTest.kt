@@ -98,25 +98,26 @@ class ForkDoctorServiceTest : ApplicationTest() {
             orphan.writeBytes(payload)
             val downloads = File(Injekt.get<ApplicationDirs>().downloadsRoot)
             val beforeFiles = captureStateSnapshot(downloads).downloadFiles
-    
+
             try {
                 val report = reindex.scan(listOf(manga))
                 val match = report.orphans.single()
                 assertEquals(ReindexMatch.EXACT, match.match)
                 assertEquals(listOf(chapter), match.chapterIds)
-    
+
                 val journalId =
                     reindex
                         .adopt(
                             listOf(ReindexAdoption(chapter, match.path)),
                             ReindexAdoptMode.COPY,
                             dryRun = false,
-                        ).single()
+                        )
+                        .single()
                 val adopted = File(getChapterCbzPath(manga, chapter))
                 assertTrue(orphan.isFile, "copy mode keeps the reported source file")
                 assertContentEquals(payload, adopted.readBytes())
                 assertTrue(ForkTestFixtures.chapterRow(chapter)[ChapterTable.isDownloaded])
-    
+
                 reindex.undoAdopt(journalId)
                 assertTrue(orphan.isFile, "undo keeps the original file")
                 assertFalse(adopted.exists(), "undo removes only the adopted copy")
