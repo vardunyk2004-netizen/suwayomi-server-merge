@@ -145,7 +145,7 @@ object ForkMergePlanner {
             PlanEntry(
                 entryKey = key,
                 number = ordered.first().number,
-                primary = ordered.first().copy(name = "Chapter ${ordered.first().number}", scanlator = null),
+                primary = ordered.first(),
                 fallbacks = if (fallbacksEnabled) ordered.drop(1) else emptyList(),
                 kind = LinkKind.CHAPTER,
                 needsManualChoice =
