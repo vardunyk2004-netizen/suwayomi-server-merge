@@ -109,7 +109,7 @@ class ForkDoctorServiceTest : ApplicationTest() {
                     reindex
                         .adopt(
                             listOf(ReindexAdoption(chapter, match.path)),
-                            ReindexAdoptMode.COPY,
+                            ReindexAdoptMode.MOVE,
                             dryRun = false,
                         ).single()
                 val adopted = File(getChapterCbzPath(manga, chapter))
