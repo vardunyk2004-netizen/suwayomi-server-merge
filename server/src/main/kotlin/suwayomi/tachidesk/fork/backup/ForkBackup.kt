@@ -20,6 +20,7 @@ import suwayomi.tachidesk.fork.merge.MergeMode
 import suwayomi.tachidesk.fork.merge.MergeOptions
 import suwayomi.tachidesk.fork.merge.PartDefinition
 import suwayomi.tachidesk.fork.merge.PartRange
+import suwayomi.tachidesk.manga.impl.backup.proto.models.BackupManga
 import suwayomi.tachidesk.manga.model.table.ChapterTable
 import suwayomi.tachidesk.manga.model.table.MangaTable
 import suwayomi.tachidesk.server.database.dbTransaction
@@ -106,9 +107,7 @@ object ForkBackup {
      * Merged manga are never exported as `BackupManga` rows: their reserved source is unknown to other apps.
      * Called by `BackupMangaHandler.backup` (normal backup and SyncYomi). No SQL when merge is off.
      */
-    fun excludeMergedFromExport(
-        mangas: List<suwayomi.tachidesk.manga.impl.backup.proto.models.BackupManga>,
-    ) = mangas
+    fun excludeMergedFromExport(mangas: List<BackupManga>) = mangas
 
     /** SyncYomi (R10, D14): merged rows never sync while setting 1050 is on. Sources sync unchanged. */
     fun excludeMergedFromSync(mangas: List<suwayomi.tachidesk.manga.impl.backup.proto.models.BackupManga>) =
