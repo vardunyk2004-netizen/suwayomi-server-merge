@@ -137,7 +137,8 @@ object ForkDuplicateScorer {
         if (peopleA.isNotEmpty() && peopleB.isNotEmpty()) signals += SignalScore("alias", weights.alias, jaccard(peopleA, peopleB))
         signals += SignalScore("url", weights.url, similarity(slug(a.url), slug(b.url)))
         if (a.chapterNumbers.isNotEmpty() && b.chapterNumbers.isNotEmpty()) {
-            signals += SignalScore("chapter", weights.chapter, jaccard(a.chapterNumbers, b.chapterNumbers))
+            // Temporary D18 old-logic simulation ignores the setting.
+            signals += SignalScore("chapter", 0.0, jaccard(a.chapterNumbers, b.chapterNumbers))
         }
         if (weights.useTrackerMatching && a.trackerKeys.isNotEmpty() && b.trackerKeys.isNotEmpty()) {
             signals += SignalScore("tracker", weights.tracker, if (a.trackerKeys.intersect(b.trackerKeys).isNotEmpty()) 1.0 else 0.0)
