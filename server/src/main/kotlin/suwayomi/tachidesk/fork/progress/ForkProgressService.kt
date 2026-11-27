@@ -17,6 +17,9 @@ import suwayomi.tachidesk.fork.ForkProgressPolicy
 import suwayomi.tachidesk.fork.database.ForkChapterFallbackTable
 import suwayomi.tachidesk.fork.database.ForkChapterLinkTable
 import suwayomi.tachidesk.fork.database.ForkChapterPartTable
+import suwayomi.tachidesk.fork.journal.ForkJournal
+import suwayomi.tachidesk.fork.journal.ForkJournalState
+import suwayomi.tachidesk.fork.journal.ForkOperation
 import suwayomi.tachidesk.fork.merge.ForkMergeRepository
 import suwayomi.tachidesk.fork.merge.ForkPageResolver
 import suwayomi.tachidesk.fork.merge.LinkKind
